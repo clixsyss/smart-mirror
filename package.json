@@ -1,13 +1,26 @@
 {
-  "name": "mirror",
+  "name": "clixsys-smart-mirror",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "A modern, professional smart mirror interface for touch screen installations",
+  "keywords": ["smart-mirror", "react", "vite", "firebase", "touch-screen", "smart-home"],
+  "author": "Clixsys Team",
+  "license": "MIT",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/smart-mirror.git"
+  },
+  "homepage": "https://github.com/your-org/smart-mirror#readme",
+  "bugs": {
+    "url": "https://github.com/your-org/smart-mirror/issues"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "vite preview"
   },
   "dependencies": {
     "firebase": "^12.2.1",
