@@ -1,14 +1,28 @@
 import React, { useState } from 'react';
 import './LightControl.css';
 
-const LightControl = ({ data, actions }) => {
+const LightControl = ({ data, actions, userId }) => {
   const [animatingLights, setAnimatingLights] = useState(new Set());
   
   const { rooms = [], loading, error } = data || {};
+  
+  // Debug: Check what rooms we're getting
+  console.log('🔍 LightControl rooms data:', rooms.map(r => ({ id: r.id, name: r.name })));
 
   const toggleRoomLights = async (roomId) => {
+    console.log('🔍 toggleRoomLights called with roomId:', roomId);
+    console.log('🔍 Available rooms:', rooms.map(r => ({ id: r.id, name: r.name })));
+    
+    if (!roomId) {
+      console.error('❌ Room ID is null or undefined');
+      return;
+    }
+    
     const room = rooms.find(r => r.id === roomId);
-    if (!room) return;
+    if (!room) {
+      console.error('Room not found with ID:', roomId);
+      return;
+    }
 
     const lightDevices = room.devices?.filter(d => d.type === 'light') || [];
     if (lightDevices.length === 0) return;
@@ -20,7 +34,7 @@ const LightControl = ({ data, actions }) => {
     try {
       // Update all light devices in the room
       for (const device of lightDevices) {
-        await actions.toggleLight(roomId, device.id, newState);
+        await actions.toggleLight(userId, roomId, device.id, newState);
       }
     } catch (error) {
       console.error('Error toggling room lights:', error);
@@ -28,11 +42,20 @@ const LightControl = ({ data, actions }) => {
   };
 
   const toggleDevice = async (roomId, deviceId, currentState) => {
+    if (!roomId) {
+      console.error('Room ID is null or undefined');
+      return;
+    }
+    if (!deviceId) {
+      console.error('Device ID is null or undefined');
+      return;
+    }
+    
     const newState = !currentState;
     setAnimatingLights(prev => new Set([...prev, deviceId]));
     
     try {
-      await actions.toggleLight(roomId, deviceId, newState);
+      await actions.toggleLight(userId, roomId, deviceId, newState);
     } catch (error) {
       console.error('Error toggling device:', error);
     } finally {
@@ -47,8 +70,13 @@ const LightControl = ({ data, actions }) => {
   };
 
   const updateBrightness = async (roomId, deviceId, brightness) => {
+    if (!deviceId) {
+      console.error('Device ID is null or undefined');
+      return;
+    }
+    
     try {
-      await actions.setLightBrightness(roomId, deviceId, brightness);
+      await actions.setLightBrightness(userId, roomId, deviceId, brightness);
     } catch (error) {
       console.error('Error updating brightness:', error);
     }
@@ -81,13 +109,13 @@ const LightControl = ({ data, actions }) => {
   return (
     <div className="light-control">
       <div className="rooms-grid">
-        {rooms.map(room => {
+        {rooms.map((room, roomIndex) => {
           const lightDevices = room.devices?.filter(d => d.type === 'light') || [];
           const allLightsOn = lightDevices.length > 0 && lightDevices.every(device => device.state);
           const someLightsOn = lightDevices.some(device => device.state);
 
           return (
-            <div key={room.id} className="room-card">
+            <div key={room.id || `room-${roomIndex}`} className="room-card">
               <div className="room-header">
                 <h3 className="room-name">{room.name}</h3>
                 <button
@@ -98,8 +126,8 @@ const LightControl = ({ data, actions }) => {
               </div>
               
               <div className="devices-list">
-                {lightDevices.map(device => (
-                  <div key={device.id} className="device-item">
+                {lightDevices.map((device, index) => (
+                  <div key={device.id || `device-${index}`} className="device-item">
                     <div className="device-info">
                       <h4 className="device-name">{device.name}</h4>
                       <span className="device-type">{device.type}</span>

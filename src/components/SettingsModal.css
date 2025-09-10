@@ -182,10 +182,13 @@
 
 .input-group {
   margin-top: 1rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
 }
 
 .location-input {
-  width: 100%;
+  flex: 1;
   padding: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
@@ -205,6 +208,29 @@
 
 .location-input::placeholder {
   color: rgba(255, 255, 255, 0.5);
+}
+
+.location-submit-btn {
+  padding: 1rem 1.5rem;
+  border: none;
+  border-radius: 12px;
+  background: 
+    linear-gradient(135deg, rgba(0, 123, 255, 0.8) 0%, rgba(0, 123, 255, 0.6) 100%);
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(0, 123, 255, 0.8);
+  backdrop-filter: blur(20px);
+  white-space: nowrap;
+}
+
+.location-submit-btn:hover {
+  background: 
+    linear-gradient(135deg, rgba(0, 123, 255, 0.9) 0%, rgba(0, 123, 255, 0.7) 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(0, 123, 255, 0.3);
 }
 
 .device-category {

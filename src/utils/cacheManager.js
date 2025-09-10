@@ -59,5 +59,32 @@ export const cacheManager = {
       }
       throw new Error(`No cached data available for ${key}`);
     }
+  },
+
+  // Clear specific cache entry
+  clear: (key) => {
+    try {
+      localStorage.removeItem(key);
+      console.log(`🗑️ Cleared cache for key: ${key}`);
+    } catch (error) {
+      console.warn('Failed to clear cache:', error);
+    }
+  },
+
+  // Clear all cache entries
+  clearAll: () => {
+    try {
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('cache_')) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+      console.log('🗑️ Cleared all cache entries');
+    } catch (error) {
+      console.warn('Failed to clear all cache:', error);
+    }
   }
 };

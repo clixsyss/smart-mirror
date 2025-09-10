@@ -54,15 +54,25 @@ function SmartMirror() {
   const [activePanel, setActivePanel] = useState(null) // 'lights', 'climate', 'assistant', 'settings', or null
   const [showControls, setShowControls] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [modalTimeout, setModalTimeout] = useState(null)
   const { user, userProfile, loading, logout } = useAuth()
   const { state, actions } = useGlobalStore()
 
   useEffect(() => {
     if (user && !state.app.isInitialized) {
-      console.log('🚀 Initializing smart mirror with user:', user.uid)
       actions.initialize(user.uid).catch(error => {
         console.error('Initialization error:', error)
       })
+    } else if (!user && state.app.isInitialized) {
+      actions.reset()
+      // Also clear local component state
+      setActivePanel(null)
+      setShowControls(false)
+      setShowSettings(false)
+      if (modalTimeout) {
+        clearTimeout(modalTimeout)
+        setModalTimeout(null)
+      }
     }
   }, [user, state.app.isInitialized, actions])
 
@@ -85,25 +95,59 @@ function SmartMirror() {
       document.removeEventListener('mousemove', handleUserActivity)
       document.removeEventListener('touchstart', handleUserActivity)
       clearTimeout(hideTimeout)
+      clearModalTimeout() // Clean up modal timeout
     }
   }, [])
+
+  const startModalTimeout = () => {
+    // Clear existing timeout
+    if (modalTimeout) {
+      clearTimeout(modalTimeout)
+    }
+    
+    // Set new timeout for 45 seconds
+    const timeout = setTimeout(() => {
+      closePanel()
+      closeSettings()
+    }, 45000)
+    
+    setModalTimeout(timeout)
+  }
+
+  const clearModalTimeout = () => {
+    if (modalTimeout) {
+      clearTimeout(modalTimeout)
+      setModalTimeout(null)
+    }
+  }
 
   const openPanel = (panel) => {
     setActivePanel(panel)
     setShowControls(true)
+    startModalTimeout()
   }
 
   const closePanel = () => {
     setActivePanel(null)
+    clearModalTimeout()
   }
 
   const openSettings = () => {
     setShowSettings(true)
     setShowControls(true)
+    startModalTimeout()
   }
 
   const closeSettings = () => {
     setShowSettings(false)
+    clearModalTimeout()
+  }
+
+  const handleModalInteraction = () => {
+    // Reset the timeout when user interacts with modal
+    if (activePanel || showSettings) {
+      startModalTimeout()
+    }
   }
 
   if (loading) {
@@ -118,7 +162,12 @@ function SmartMirror() {
     )
   }
 
-  // Show basic interface even if not fully initialized
+  // Always check for user first - redirect to login if no user
+  if (!user) {
+    return <Login />
+  }
+
+  // Show basic interface even if not fully initialized (but only if user is logged in)
   if (!state.app.isInitialized) {
     return (
       <div className="smart-mirror">
@@ -160,93 +209,109 @@ function SmartMirror() {
     )
   }
 
-  if (!user) {
-    return <Login />
-  }
-
   return (
     <div className="smart-mirror">
       {/* Main Content - Two Column Grid */}
       <div className="mirror-content">
         {/* Time & Date Card */}
-        <div className="card time-card">
-          <TimeDate />
-        </div>
+        {state.settings?.showTime !== false && (
+          <div className="card time-card">
+            <TimeDate />
+          </div>
+        )}
 
         {/* Weather Card */}
-        <div className="card weather-card">
-          <Weather data={state.weather} />
-        </div>
+        {state.settings?.showWeather !== false && (
+          <div className="card weather-card">
+            <Weather data={state.weather} />
+          </div>
+        )}
 
         {/* Quote Card */}
-        <div className="card quote-card">
-          <QuoteOfDay data={state.quote} />
-        </div>
+        {state.settings?.showQuote !== false && (
+          <div className="card quote-card">
+            <QuoteOfDay data={state.quote} />
+          </div>
+        )}
 
         {/* Services Grid */}
         <div className="services-grid">
           {/* Lights Service Card */}
-          <div className="service-card" onClick={() => openPanel('lights')}>
-            <div className="service-icon">
-              <LightIcon />
+          {state.settings?.showLights !== false && (
+            <div className="service-card" onClick={() => openPanel('lights')}>
+              <div className="service-icon">
+                <LightIcon />
+              </div>
+              <div className="service-title">Lights</div>
             </div>
-            <div className="service-title">Lights</div>
-          </div>
+          )}
 
           {/* Climate Service Card */}
-          <div className="service-card" onClick={() => openPanel('climate')}>
-            <div className="service-icon">
-              <ClimateIcon />
+          {state.settings?.showClimate !== false && (
+            <div className="service-card" onClick={() => openPanel('climate')}>
+              <div className="service-icon">
+                <ClimateIcon />
+              </div>
+              <div className="service-title">Climate</div>
             </div>
-            <div className="service-title">Climate</div>
-          </div>
+          )}
 
           {/* AI Assistant Service Card */}
-          <div className="service-card" onClick={() => openPanel('assistant')}>
-            <div className="service-icon">
-              <AssistantIcon />
+          {state.settings?.showAssistant !== false && (
+            <div className="service-card" onClick={() => openPanel('assistant')}>
+              <div className="service-icon">
+                <AssistantIcon />
+              </div>
+              <div className="service-title">Assistant</div>
             </div>
-            <div className="service-title">Assistant</div>
-          </div>
+          )}
         </div>
 
         {/* News Card */}
-        <div className="news-card">
-          <NewsHeadlines data={state.news} />
-        </div>
+        {state.settings?.showNews !== false && (
+          <div className="news-card">
+            <NewsHeadlines data={state.news} />
+          </div>
+        )}
       </div>
 
       {/* Control Dock - Bottom */}
-      <div className={`control-dock ${showControls ? 'visible' : ''}`}>
-        <button 
-          className="control-btn lights-btn"
-          onClick={() => openPanel('lights')}
-          title="Lights Control"
-        >
-          <div className="btn-icon">
-            <LightIcon />
-          </div>
-        </button>
+      {/* <div className={`control-dock ${showControls ? 'visible' : ''}`}>
+        {state.settings?.showLights !== false && (
+          <button 
+            className="control-btn lights-btn"
+            onClick={() => openPanel('lights')}
+            title="Lights Control"
+          >
+            <div className="btn-icon">
+              <LightIcon />
+            </div>
+          </button>
+        )}
         
-        <button 
-          className="control-btn climate-btn"
-          onClick={() => openPanel('climate')}
-          title="Climate Control"
-        >
-          <div className="btn-icon">
-            <ClimateIcon />
-          </div>
-        </button>
+        {state.settings?.showClimate !== false && (
+          <button 
+            className="control-btn climate-btn"
+            onClick={() => openPanel('climate')}
+            title="Climate Control"
+          >
+            <div className="btn-icon">
+              <ClimateIcon />
+            </div>
+          </button>
+        )}
         
-        <button 
-          className="control-btn assistant-btn"
-          onClick={() => openPanel('assistant')}
-          title="AI Assistant"
-        >
-          <div className="btn-icon">
-            <AssistantIcon />
-          </div>
-        </button>
+        {state.settings?.showAssistant !== false && (
+          <button 
+            className="control-btn assistant-btn"
+            onClick={() => openPanel('assistant')}
+            title="AI Assistant"
+          >
+            <div className="btn-icon">
+              <AssistantIcon />
+            </div>
+          </button>
+        )}
         
         <button 
           className="control-btn logout-btn"
@@ -257,12 +322,12 @@ function SmartMirror() {
             <LogoutIcon />
           </div>
         </button>
-      </div>
+      </div> */}
 
       {/* Beautiful Modal Panels */}
       {activePanel === 'lights' && (
-        <div className="modal-overlay">
-          <div className="control-modal lights-modal">
+        <div className="modal-overlay" onClick={closePanel}>
+          <div className="control-modal lights-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-icon">
                 <LightIcon />
@@ -273,16 +338,16 @@ function SmartMirror() {
               </div>
               <button className="modal-close-btn" onClick={closePanel}>×</button>
             </div>
-            <div className="modal-content">
-              <LightControl data={state.smartHome} actions={actions} />
+            <div className="modal-content" onMouseMove={handleModalInteraction} onTouchStart={handleModalInteraction}>
+              <LightControl data={state.smartHome} actions={actions} userId={user?.uid} />
             </div>
           </div>
         </div>
       )}
 
       {activePanel === 'climate' && (
-        <div className="modal-overlay">
-          <div className="control-modal climate-modal">
+        <div className="modal-overlay" onClick={closePanel}>
+          <div className="control-modal climate-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-icon">
                 <ClimateIcon />
@@ -293,16 +358,16 @@ function SmartMirror() {
               </div>
               <button className="modal-close-btn" onClick={closePanel}>×</button>
             </div>
-            <div className="modal-content">
-              <ClimateControl data={state.smartHome} actions={actions} />
+            <div className="modal-content" onMouseMove={handleModalInteraction} onTouchStart={handleModalInteraction}>
+              <ClimateControl data={state.smartHome} actions={actions} userId={user?.uid} />
             </div>
           </div>
         </div>
       )}
 
       {activePanel === 'assistant' && (
-        <div className="modal-overlay">
-          <div className="control-modal assistant-modal">
+        <div className="modal-overlay" onClick={closePanel}>
+          <div className="control-modal assistant-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-icon">
                 <AssistantIcon />
@@ -313,7 +378,7 @@ function SmartMirror() {
               </div>
               <button className="modal-close-btn" onClick={closePanel}>×</button>
             </div>
-            <div className="modal-content">
+            <div className="modal-content" onMouseMove={handleModalInteraction} onTouchStart={handleModalInteraction}>
               <ChatGPTAssistant data={state.assistant} actions={actions} />
             </div>
           </div>
@@ -331,12 +396,15 @@ function SmartMirror() {
 
       {/* Settings Modal */}
       {showSettings && (
-        <SettingsModal 
-          onClose={closeSettings}
-          state={state}
-          actions={actions}
-          logout={logout}
-        />
+        <div className="modal-overlay" onClick={closeSettings}>
+          <SettingsModal 
+            onClose={closeSettings}
+            state={state}
+            actions={actions}
+            logout={logout}
+            onInteraction={handleModalInteraction}
+          />
+        </div>
       )}
 
       {/* Overlay Background */}

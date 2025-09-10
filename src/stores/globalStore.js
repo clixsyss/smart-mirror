@@ -52,6 +52,30 @@ class GlobalStore {
         isInitialized: false,
         lastRefresh: Date.now(),
         refreshInterval: null
+      },
+      
+      // Settings
+      settings: {
+        // Display settings
+        showTime: true,
+        showWeather: true,
+        showQuote: true,
+        showNews: true,
+        showLights: true,
+        showClimate: true,
+        showAssistant: true,
+        
+        // Clock settings
+        clockFormat: '24', // '12' or '24'
+        
+        // Location settings
+        weatherLocation: 'New York, NY',
+        
+        // Device settings
+        selectedDevices: {
+          lights: [],
+          climate: []
+        }
       }
     };
     
@@ -93,19 +117,26 @@ class GlobalStore {
       // Check if API key is available
       const apiKey = import.meta.env.VITE_OPENWEATHER_API_KEY;
       if (!apiKey || apiKey === 'your_openweather_api_key_here') {
+        console.error('❌ OpenWeather API key not configured');
         throw new Error('OpenWeather API key not configured');
       }
 
-      const weatherData = await cacheManager.fetchWithCache('weather', async () => {
-        const response = await fetch(
-          `https://api.openweathermap.org/data/2.5/weather?q=London&appid=${apiKey}&units=metric`
-        );
+      // Get location from settings
+      const location = this.state.settings?.weatherLocation || 'New York, NY';
+
+      const weatherData = await cacheManager.fetchWithCache(`weather-${location}`, async () => {
+        const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(location)}&appid=${apiKey}&units=metric`;
+        
+        const response = await fetch(url);
         
         if (!response.ok) {
-          throw new Error(`Weather API error: ${response.status}`);
+          const errorText = await response.text();
+          console.error('❌ Weather API error:', response.status, errorText);
+          throw new Error(`Weather API error: ${response.status} - ${errorText}`);
         }
         
         const data = await response.json();
+        
         return {
           temperature: Math.round(data.main.temp),
           description: data.weather[0].description,
@@ -120,16 +151,19 @@ class GlobalStore {
         lastUpdated: Date.now()
       });
     } catch (error) {
-      console.error('Weather fetch error:', error);
-      // Use fallback data
+      console.error('❌ Weather fetch error:', error);
+      
+      // Use fallback data with the actual location
+      const location = this.state.settings?.weatherLocation || 'New York, NY';
       this.updateSection('weather', {
         current: {
           temperature: 22,
           description: 'partly cloudy',
-          location: 'London',
+          location: location,
           icon: '02d'
         },
         loading: false,
+        error: error.message,
         lastUpdated: Date.now()
       });
     }
@@ -259,29 +293,185 @@ class GlobalStore {
       const rooms = [...roomsStore.rooms];
       const devices = rooms.flatMap(room => room.devices || []);
       
+      // Ensure rooms have proper IDs
+      const validRooms = rooms.filter(room => room.id);
+      const validDevices = validRooms.flatMap(room => room.devices || []);
+      
       this.updateSection('smartHome', {
-        rooms,
-        devices,
+        rooms: validRooms,
+        devices: validDevices,
         loading: false,
         lastUpdated: Date.now()
       });
     } catch (error) {
       console.error('Smart home fetch error:', error);
-      // Provide fallback empty data instead of error
+      // Provide fallback data for testing
+      const fallbackRooms = [
+        {
+          id: 'living-room',
+          name: 'Living Room',
+          devices: [
+            { id: 'light-1', name: 'Main Light', type: 'light', state: true, brightness: 80 },
+            { id: 'light-2', name: 'Lamp', type: 'light', state: false, brightness: 0 }
+          ]
+        },
+        {
+          id: 'bedroom',
+          name: 'Bedroom',
+          devices: [
+            { id: 'light-3', name: 'Bedside Light', type: 'light', state: true, brightness: 60 },
+            { id: 'thermostat-1', name: 'Thermostat', type: 'thermostat', state: true, temperature: 22, mode: 'heat' }
+          ]
+        }
+      ];
+      
       this.updateSection('smartHome', {
-        rooms: [],
-        devices: [],
+        rooms: fallbackRooms,
+        devices: fallbackRooms.flatMap(room => room.devices || []),
         loading: false,
         lastUpdated: Date.now()
       });
     }
   }
 
+  // Set up real-time listener for smart home data
+  setupRealtimeListener(userId) {
+    if (!roomsStore || !roomsStore.subscribe) {
+      console.log('❌ RoomsStore or subscribe method not available');
+      return;
+    }
+    
+    console.log('✅ Setting up real-time listener for smart home data');
+    
+    // Subscribe to roomsStore changes
+    this.realtimeUnsubscribe = roomsStore.subscribe((rooms) => {
+      console.log('🔄 Real-time update received from roomsStore:', rooms.length, 'rooms');
+      console.log('🔍 Raw rooms data:', rooms.map(r => ({ id: r.id, name: r.name, hasId: !!r.id })));
+      
+      // Ensure rooms have proper IDs
+      const validRooms = rooms.filter(room => room.id);
+      const devices = validRooms.flatMap(room => room.devices || []);
+      
+      console.log('✅ Valid rooms after filtering:', validRooms.length, 'rooms with IDs');
+      
+      this.updateSection('smartHome', {
+        rooms: validRooms,
+        devices: devices,
+        loading: false,
+        error: null,
+        lastUpdated: Date.now()
+      });
+    });
+  }
+
+  // Reset all data when user logs out
+  reset() {
+    // Stop all background refresh intervals
+    this.stopBackgroundRefresh();
+    
+    // Clean up real-time listener
+    if (this.realtimeUnsubscribe) {
+      this.realtimeUnsubscribe();
+      this.realtimeUnsubscribe = null;
+    }
+    
+    // Clear cache
+    cacheManager.clearAll();
+    
+    // Clear all localStorage data
+    localStorage.removeItem('smartMirrorSettings');
+    
+    // Clear any other user-related localStorage items
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.includes('smartMirror') || key.includes('user') || key.includes('auth'))) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    // Cleanup Firebase listeners and clear roomsStore data
+    if (roomsStore) {
+      if (roomsStore.cleanup) {
+        roomsStore.cleanup();
+      }
+      // Clear roomsStore data
+      roomsStore.rooms = [];
+      roomsStore.listeners = [];
+      roomsStore.uiListeners = [];
+    }
+    
+    // Reset state to initial values
+    this.setState({
+      weather: {
+        current: null,
+        loading: false,
+        error: null,
+        lastUpdated: null
+      },
+      news: {
+        headlines: [],
+        loading: false,
+        error: null,
+        lastUpdated: null
+      },
+      quote: {
+        content: null,
+        author: null,
+        loading: false,
+        error: null,
+        lastUpdated: null
+      },
+      smartHome: {
+        rooms: [],
+        devices: [],
+        loading: false,
+        error: null,
+        lastUpdated: null
+      },
+      assistant: {
+        messages: [],
+        loading: false,
+        error: null,
+        lastUpdated: null
+      },
+      settings: {
+        showTime: true,
+        showWeather: true,
+        showQuote: true,
+        showNews: true,
+        showLights: true,
+        showClimate: true,
+        showAssistant: true,
+        clockFormat: '12',
+        weatherLocation: 'New York, NY',
+        selectedDevices: {
+          lights: [],
+          climate: []
+        }
+      },
+      app: {
+        isInitialized: false,
+        loading: false,
+        error: null
+      }
+    });
+    
+  }
+
   // Initialize all data
   async initialize(userId) {
     if (this.state.app.isInitialized) return;
     
-    console.log('🚀 Initializing global store...');
+    // Ensure we start with clean state
+    if (this.state.smartHome.rooms.length > 0) {
+      this.state.smartHome.rooms = [];
+      this.state.smartHome.devices = [];
+    }
+    
+    // Load settings first
+    this.loadSettings();
     
     // Set initialized immediately to prevent loading screen issues
     this.setState({ app: { ...this.state.app, isInitialized: true } });
@@ -296,8 +486,11 @@ class GlobalStore {
     
     try {
       await Promise.allSettled(promises);
+      
+      // Set up real-time listener for smart home data
+      this.setupRealtimeListener(userId);
+      
       this.startBackgroundRefresh();
-      console.log('✅ Global store initialized');
     } catch (error) {
       console.error('❌ Global store initialization failed:', error);
     }
@@ -415,7 +608,6 @@ class GlobalStore {
 
   // Manual refresh
   async refreshAll(userId) {
-    console.log('🔄 Manual refresh triggered');
     this.setState({ app: { ...this.state.app, lastRefresh: Date.now() } });
     
     const promises = [
@@ -445,6 +637,313 @@ class GlobalStore {
 
   clearMessages() {
     this.updateSection('assistant', { messages: [] });
+  }
+
+  // Settings methods
+  updateSettings(updates) {
+    const newSettings = {
+      ...this.state.settings,
+      ...updates
+    };
+    
+    this.updateSection('settings', newSettings);
+    
+    // Save to localStorage
+    localStorage.setItem('smartMirrorSettings', JSON.stringify(newSettings));
+  }
+
+  loadSettings() {
+    const savedSettings = localStorage.getItem('smartMirrorSettings');
+    if (savedSettings) {
+      try {
+        const parsed = JSON.parse(savedSettings);
+        this.updateSection('settings', parsed);
+      } catch (error) {
+        console.error('Error loading settings:', error);
+      }
+    }
+  }
+
+  updateWeatherLocation(location) {
+    this.updateSettings({ weatherLocation: location });
+    // Clear all weather cache to force refresh with new location
+    cacheManager.clear('weather');
+    // Also clear any location-specific cache
+    const oldLocation = this.state.settings?.weatherLocation || 'New York, NY';
+    cacheManager.clear(`weather-${oldLocation}`);
+    // Trigger weather refresh with new location
+    this.fetchWeather();
+  }
+
+  // Test weather API directly (for debugging)
+  async testWeatherAPI(location = 'New York, NY') {
+    try {
+      const apiKey = import.meta.env.VITE_OPENWEATHER_API_KEY;
+      if (!apiKey || apiKey === 'your_openweather_api_key_here') {
+        console.error('❌ OpenWeather API key not configured');
+        return { error: 'API key not configured' };
+      }
+
+      const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(location)}&appid=${apiKey}&units=metric`;
+      
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('🧪 API error response:', errorText);
+        return { error: `API error: ${response.status} - ${errorText}` };
+      }
+      
+      const data = await response.json();
+      
+      return {
+        success: true,
+        temperature: Math.round(data.main.temp),
+        description: data.weather[0].description,
+        location: data.name,
+        icon: data.weather[0].icon
+      };
+    } catch (error) {
+      console.error('🧪 Test API error:', error);
+      return { error: error.message };
+    }
+  }
+
+  updateClockFormat(format) {
+    this.updateSettings({ clockFormat: format });
+  }
+
+  // Get timezone from location (simplified mapping)
+  getTimezoneFromLocation(location) {
+    const locationLower = location.toLowerCase();
+    
+    // Simple timezone mapping for common locations
+    const timezoneMap = {
+      'new york': 'America/New_York',
+      'london': 'Europe/London',
+      'paris': 'Europe/Paris',
+      'tokyo': 'Asia/Tokyo',
+      'sydney': 'Australia/Sydney',
+      'los angeles': 'America/Los_Angeles',
+      'chicago': 'America/Chicago',
+      'denver': 'America/Denver',
+      'toronto': 'America/Toronto',
+      'vancouver': 'America/Vancouver',
+      'mexico city': 'America/Mexico_City',
+      'sao paulo': 'America/Sao_Paulo',
+      'madrid': 'Europe/Madrid',
+      'berlin': 'Europe/Berlin',
+      'rome': 'Europe/Rome',
+      'moscow': 'Europe/Moscow',
+      'beijing': 'Asia/Shanghai',
+      'hong kong': 'Asia/Hong_Kong',
+      'singapore': 'Asia/Singapore',
+      'dubai': 'Asia/Dubai',
+      'mumbai': 'Asia/Kolkata',
+      'delhi': 'Asia/Kolkata',
+      'cairo': 'Africa/Cairo',
+      'johannesburg': 'Africa/Johannesburg',
+      'lagos': 'Africa/Lagos',
+      'nairobi': 'Africa/Nairobi'
+    };
+    
+    // Try to find a match
+    for (const [key, timezone] of Object.entries(timezoneMap)) {
+      if (locationLower.includes(key)) {
+        return timezone;
+      }
+    }
+    
+    // Default to UTC if no match found
+    return 'UTC';
+  }
+
+  updateDisplaySetting(key, value) {
+    this.updateSettings({ [key]: value });
+  }
+
+  updateDeviceSelection(category, deviceId, selected) {
+    const currentDevices = this.state.settings.selectedDevices[category] || [];
+    const updatedDevices = selected 
+      ? [...currentDevices, deviceId]
+      : currentDevices.filter(id => id !== deviceId);
+    
+    this.updateSettings({
+      selectedDevices: {
+        ...this.state.settings.selectedDevices,
+        [category]: updatedDevices
+      }
+    });
+  }
+
+  // Helper method to update local device state immediately
+  updateLocalDeviceState(roomId, deviceId, updates) {
+    const currentRooms = [...this.state.smartHome.rooms];
+    const roomIndex = currentRooms.findIndex(room => room.id === roomId);
+    
+    if (roomIndex !== -1) {
+      const deviceIndex = currentRooms[roomIndex].devices.findIndex(device => device.id === deviceId);
+      if (deviceIndex !== -1) {
+        currentRooms[roomIndex].devices[deviceIndex] = {
+          ...currentRooms[roomIndex].devices[deviceIndex],
+          ...updates
+        };
+        
+        this.updateSection('smartHome', {
+          rooms: currentRooms,
+          devices: currentRooms.flatMap(room => room.devices || [])
+        });
+      }
+    }
+  }
+
+  // Smart home device control methods
+  async toggleLight(userId, roomId, deviceId, state) {
+    try {
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+      if (!roomId) {
+        throw new Error('Room ID is required');
+      }
+      if (!deviceId) {
+        throw new Error('Device ID is required');
+      }
+      
+      // Update local state immediately for responsive UI
+      this.updateLocalDeviceState(roomId, deviceId, { state });
+      
+      // Try to update in Firebase if roomsStore is available
+      if (roomsStore && roomsStore.updateDevice) {
+        await roomsStore.updateDevice(userId, roomId, deviceId, { state });
+        // Refresh smart home data to get updated state
+        this.fetchSmartHomeData(userId);
+        }
+    } catch (error) {
+      console.error('Error toggling light:', error);
+      throw error;
+    }
+  }
+
+  async setLightBrightness(userId, roomId, deviceId, brightness) {
+    try {
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+      if (!roomId) {
+        throw new Error('Room ID is required');
+      }
+      if (!deviceId) {
+        throw new Error('Device ID is required');
+      }
+      
+      // Update local state immediately for responsive UI
+      this.updateLocalDeviceState(roomId, deviceId, { brightness });
+      
+      // Try to update in Firebase if roomsStore is available
+      if (roomsStore && roomsStore.updateDevice) {
+        await roomsStore.updateDevice(userId, roomId, deviceId, { brightness });
+        // Refresh smart home data to get updated state
+        this.fetchSmartHomeData(userId);
+        }
+    } catch (error) {
+      console.error('Error setting light brightness:', error);
+      throw error;
+    }
+  }
+
+  async setClimateState(userId, roomId, deviceId, state) {
+    try {
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+      if (!roomId) {
+        throw new Error('Room ID is required');
+      }
+      if (!deviceId) {
+        throw new Error('Device ID is required');
+      }
+      
+      // Update local state immediately for responsive UI
+      this.updateLocalDeviceState(roomId, deviceId, { state });
+      
+      // Try to update in Firebase if roomsStore is available
+      if (roomsStore && roomsStore.updateDevice) {
+        await roomsStore.updateDevice(userId, roomId, deviceId, { state });
+        // Refresh smart home data to get updated state
+        this.fetchSmartHomeData(userId);
+        }
+    } catch (error) {
+      console.error('Error setting climate state:', error);
+      throw error;
+    }
+  }
+
+  async setClimateTemperature(userId, roomId, deviceId, temperature) {
+    try {
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+      if (!roomId) {
+        throw new Error('Room ID is required');
+      }
+      if (!deviceId) {
+        throw new Error('Device ID is required');
+      }
+      
+      // Update local state immediately for responsive UI
+      this.updateLocalDeviceState(roomId, deviceId, { temperature });
+      
+      // Try to update in Firebase if roomsStore is available
+      if (roomsStore && roomsStore.updateDevice) {
+        await roomsStore.updateDevice(userId, roomId, deviceId, { temperature });
+        // Refresh smart home data to get updated state
+        this.fetchSmartHomeData(userId);
+        }
+    } catch (error) {
+      console.error('Error setting climate temperature:', error);
+      throw error;
+    }
+  }
+
+  async setClimateMode(userId, roomId, deviceId, mode) {
+    try {
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+      if (!roomId) {
+        throw new Error('Room ID is required');
+      }
+      if (!deviceId) {
+        throw new Error('Device ID is required');
+      }
+      
+      // Update local state immediately for responsive UI
+      this.updateLocalDeviceState(roomId, deviceId, { mode });
+      
+      // Try to update in Firebase if roomsStore is available
+      if (roomsStore && roomsStore.updateDevice) {
+        await roomsStore.updateDevice(userId, roomId, deviceId, { mode });
+        // Refresh smart home data to get updated state
+        this.fetchSmartHomeData(userId);
+        }
+    } catch (error) {
+      console.error('Error setting climate mode:', error);
+      throw error;
+    }
+  }
+
+  // AI Assistant methods
+  async sendAssistantMessage(message) {
+    try {
+      // This would typically call a ChatGPT API
+      // For now, return a mock response
+      const response = `I received your message: "${message}". I'm a smart home assistant and can help you control your devices.`;
+      return response;
+    } catch (error) {
+      console.error('Error sending assistant message:', error);
+      throw error;
+    }
   }
 
   // Get current state

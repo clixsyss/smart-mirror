@@ -1,77 +1,38 @@
 import { useState, useEffect } from 'react'
 import './SettingsModal.css'
 
-const SettingsModal = ({ onClose, state, actions, logout }) => {
-  const [settings, setSettings] = useState({
-    // Display settings
-    showTime: true,
-    showWeather: true,
-    showQuote: true,
-    showNews: true,
-    showLights: true,
-    showClimate: true,
-    showAssistant: true,
-    
-    // Clock settings
-    clockFormat: '24', // '12' or '24'
-    
-    // Location settings
-    weatherLocation: 'New York, NY',
-    
-    // Device settings
-    selectedDevices: {
-      lights: [],
-      climate: []
-    }
-  })
-
-  // Load settings from localStorage on mount
+const SettingsModal = ({ onClose, state, actions, logout, onInteraction }) => {
+  const settings = state.settings || {}
+  const [locationInput, setLocationInput] = useState(settings.weatherLocation || 'New York, NY')
+  
+  // Update local state when settings change
   useEffect(() => {
-    const savedSettings = localStorage.getItem('smartMirrorSettings')
-    if (savedSettings) {
-      try {
-        const parsed = JSON.parse(savedSettings)
-        setSettings(prev => ({ ...prev, ...parsed }))
-      } catch (error) {
-        console.error('Error loading settings:', error)
-      }
-    }
-  }, [])
-
-  // Save settings to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('smartMirrorSettings', JSON.stringify(settings))
-  }, [settings])
+    setLocationInput(settings.weatherLocation || 'New York, NY')
+  }, [settings.weatherLocation])
 
   const handleSettingChange = (key, value) => {
-    setSettings(prev => ({
-      ...prev,
-      [key]: value
-    }))
+    if (actions && actions.updateDisplaySetting) {
+      actions.updateDisplaySetting(key, value)
+    } else {
+      console.error('updateDisplaySetting action not available')
+    }
   }
 
   const handleDeviceToggle = (category, deviceId) => {
-    setSettings(prev => ({
-      ...prev,
-      selectedDevices: {
-        ...prev.selectedDevices,
-        [category]: prev.selectedDevices[category].includes(deviceId)
-          ? prev.selectedDevices[category].filter(id => id !== deviceId)
-          : [...prev.selectedDevices[category], deviceId]
-      }
-    }))
+    const isSelected = settings.selectedDevices?.[category]?.includes(deviceId) || false
+    actions.updateDeviceSelection(category, deviceId, !isSelected)
   }
 
   const handleLocationChange = (e) => {
     const newLocation = e.target.value
-    setSettings(prev => ({
-      ...prev,
-      weatherLocation: newLocation
-    }))
-    
-    // Update weather with new location
-    if (actions.updateWeatherLocation) {
-      actions.updateWeatherLocation(newLocation)
+    setLocationInput(newLocation)
+  }
+  
+  const handleLocationSubmit = () => {
+    if (actions && actions.updateWeatherLocation) {
+      actions.updateWeatherLocation(locationInput)
+    } else {
+      console.error('updateWeatherLocation action not available')
     }
   }
 
@@ -90,8 +51,8 @@ const SettingsModal = ({ onClose, state, actions, logout }) => {
   ) || []
 
   return (
-    <div className="settings-modal">
-      <div className="settings-content">
+    <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="settings-content" onMouseMove={onInteraction} onTouchStart={onInteraction}>
         <div className="settings-header">
           <h2>Settings</h2>
           <button className="close-btn" onClick={onClose}>×</button>
@@ -150,7 +111,7 @@ const SettingsModal = ({ onClose, state, actions, logout }) => {
                   name="clockFormat"
                   value="24"
                   checked={settings.clockFormat === '24'}
-                  onChange={(e) => handleSettingChange('clockFormat', e.target.value)}
+                  onChange={(e) => actions.updateClockFormat(e.target.value)}
                 />
                 <span>24 Hour</span>
               </label>
@@ -161,7 +122,7 @@ const SettingsModal = ({ onClose, state, actions, logout }) => {
                   name="clockFormat"
                   value="12"
                   checked={settings.clockFormat === '12'}
-                  onChange={(e) => handleSettingChange('clockFormat', e.target.value)}
+                  onChange={(e) => actions.updateClockFormat(e.target.value)}
                 />
                 <span>12 Hour (AM/PM)</span>
               </label>
@@ -174,11 +135,18 @@ const SettingsModal = ({ onClose, state, actions, logout }) => {
             <div className="input-group">
               <input
                 type="text"
-                value={settings.weatherLocation}
+                value={locationInput}
                 onChange={handleLocationChange}
+                onKeyPress={(e) => e.key === 'Enter' && handleLocationSubmit()}
                 placeholder="Enter city, state or country"
                 className="location-input"
               />
+              <button 
+                onClick={handleLocationSubmit}
+                className="location-submit-btn"
+              >
+                Update
+              </button>
             </div>
           </div>
 

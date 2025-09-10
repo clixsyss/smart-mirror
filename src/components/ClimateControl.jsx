@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './ClimateControl.css';
 
-const ClimateControl = ({ data, actions }) => {
+const ClimateControl = ({ data, actions, userId }) => {
   const [animatingDevices, setAnimatingDevices] = useState(new Set());
   
   const { rooms = [], loading, error } = data || {};
@@ -23,7 +23,7 @@ const ClimateControl = ({ data, actions }) => {
     try {
       // Update all climate devices in the room
       for (const device of climateDevices) {
-        await actions.setClimateState(roomId, device.id, newState);
+        await actions.setClimateState(userId, roomId, device.id, newState);
       }
     } catch (error) {
       console.error('Error toggling room climate:', error);
@@ -35,7 +35,7 @@ const ClimateControl = ({ data, actions }) => {
     setAnimatingDevices(prev => new Set([...prev, deviceId]));
     
     try {
-      await actions.setClimateState(roomId, deviceId, newState);
+      await actions.setClimateState(userId, roomId, deviceId, newState);
     } catch (error) {
       console.error('Error toggling device:', error);
     } finally {
@@ -51,7 +51,7 @@ const ClimateControl = ({ data, actions }) => {
 
   const updateTemperature = async (roomId, deviceId, temperature) => {
     try {
-      await actions.setClimateTemperature(roomId, deviceId, temperature);
+      await actions.setClimateTemperature(userId, roomId, deviceId, temperature);
     } catch (error) {
       console.error('Error updating temperature:', error);
     }
@@ -59,7 +59,7 @@ const ClimateControl = ({ data, actions }) => {
 
   const updateMode = async (roomId, deviceId, mode) => {
     try {
-      await actions.setClimateMode(roomId, deviceId, mode);
+      await actions.setClimateMode(userId, roomId, deviceId, mode);
     } catch (error) {
       console.error('Error updating mode:', error);
     }
@@ -92,7 +92,7 @@ const ClimateControl = ({ data, actions }) => {
   return (
     <div className="climate-control">
       <div className="rooms-grid">
-        {rooms.map(room => {
+        {rooms.map((room, roomIndex) => {
           const climateDevices = room.devices?.filter(d => 
             ['thermostat', 'fan', 'air_conditioner'].includes(d.type)
           ) || [];
@@ -101,7 +101,7 @@ const ClimateControl = ({ data, actions }) => {
           const someDevicesOn = climateDevices.some(device => device.state);
 
           return (
-            <div key={room.id} className="room-card">
+            <div key={room.id || `room-${roomIndex}`} className="room-card">
               <div className="room-header">
                 <h3 className="room-name">{room.name}</h3>
                 <button
@@ -112,8 +112,8 @@ const ClimateControl = ({ data, actions }) => {
               </div>
               
               <div className="devices-list">
-                {climateDevices.map(device => (
-                  <div key={device.id} className="device-item">
+                {climateDevices.map((device, deviceIndex) => (
+                  <div key={device.id || `device-${deviceIndex}`} className="device-item">
                     <div className="device-info">
                       <h4 className="device-name">{device.name}</h4>
                       <span className="device-type">{device.type}</span>

@@ -48,11 +48,15 @@ class RoomsStore {
 
       const fetchedRooms = []
       for (const roomDoc of querySnapshot.docs) {
+        console.log('🔍 fetchRooms - Room document:', { id: roomDoc.id, exists: roomDoc.exists, data: roomDoc.data() });
+        
         const roomData = {
-          id: roomDoc.id,
           ...roomDoc.data(),
+          id: roomDoc.id, // Put ID after spread to ensure it's not overwritten
           devices: []
         }
+        
+        console.log('🔍 fetchRooms - Created roomData:', { id: roomData.id, name: roomData.name });
 
         // Fetch devices for this room
         const devicesQuery = query(
@@ -70,6 +74,7 @@ class RoomsStore {
       }
 
       this.rooms = fetchedRooms
+      console.log('🔍 fetchRooms - Final rooms with IDs:', this.rooms.map(r => ({ id: r.id, name: r.name })));
       
       // Only setup realtime listener if not already set up
       if (this.listeners.length === 0) {
@@ -99,11 +104,15 @@ class RoomsStore {
       
       const updatedRooms = []
       for (const roomDoc of roomsSnapshot.docs) {
+        console.log('🔍 Room document:', { id: roomDoc.id, exists: roomDoc.exists, data: roomDoc.data() });
+        
         const roomData = {
-          id: roomDoc.id,
           ...roomDoc.data(),
+          id: roomDoc.id, // Put ID after spread to ensure it's not overwritten
           devices: []
         }
+        
+        console.log('🔍 Created roomData:', { id: roomData.id, name: roomData.name });
 
         // Get devices for this room with real-time listener
         const devicesRef = collection(db, 'users', userId, 'rooms', roomDoc.id, 'devices')
@@ -140,9 +149,12 @@ class RoomsStore {
             
             // Force complete state refresh by creating new array and objects
             this.rooms = this.rooms.map(room => ({
+              id: room.id, // Ensure ID is preserved
               ...room,
               devices: room.devices.map(device => ({ ...device }))
             }));
+            
+            console.log('🔍 After device update, rooms with IDs:', this.rooms.map(r => ({ id: r.id, name: r.name })));
             
             // Immediate UI notification
             this.notifyListeners();
@@ -159,6 +171,7 @@ class RoomsStore {
       }
 
       this.rooms = updatedRooms
+      console.log('🔍 Initial rooms with IDs:', this.rooms.map(r => ({ id: r.id, name: r.name })));
       this.notifyListeners()
     }, (error) => {
       console.error('❌ Firebase listener error for rooms:', error)
@@ -169,6 +182,20 @@ class RoomsStore {
 
   async updateDevice(userId, roomId, deviceId, updates) {
     try {
+      // Validate all required parameters
+      if (!userId) {
+        throw new Error('User ID is required')
+      }
+      if (!roomId) {
+        throw new Error('Room ID is required')
+      }
+      if (!deviceId) {
+        throw new Error('Device ID is required')
+      }
+      if (!updates || typeof updates !== 'object') {
+        throw new Error('Updates object is required')
+      }
+      
       console.log('🔧 RoomsStore.updateDevice called with:', { userId, roomId, deviceId, updates })
       
       realtimeDebugger.log('RoomsStore', `Updating device ${deviceId} in room ${roomId}`, updates)
@@ -241,6 +268,7 @@ class RoomsStore {
     
     // Force state update by creating completely new objects
     const freshRooms = this.rooms.map(room => ({
+      id: room.id, // Ensure ID is preserved
       ...room,
       devices: room.devices.map(device => ({ ...device }))
     }));
