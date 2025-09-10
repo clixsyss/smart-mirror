@@ -1,0 +1,147 @@
+.news {
+  color: #ffffff;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 32px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.news:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+.news-title {
+  font-size: 1.5rem;
+  font-weight: 500;
+  margin-bottom: 24px;
+  color: rgba(255, 255, 255, 0.9);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+
+.news-ticker {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin-bottom: 24px;
+  min-height: 120px;
+}
+
+.news-item {
+  max-width: 100%;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.5s ease-in-out;
+  text-align: center;
+}
+
+.news-item.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.news-headline {
+  font-size: 1.25rem;
+  font-weight: 500;
+  margin-bottom: 12px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.news-description {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.news-date {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 400;
+}
+
+.news-indicators {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.indicator:hover {
+  background: rgba(255, 255, 255, 0.4);
+  transform: scale(1.1);
+}
+
+.indicator.active {
+  background: rgba(255, 255, 255, 0.8);
+  transform: scale(1.2);
+}
+
+.news-loading,
+.news-error {
+  font-size: 1.2rem;
+  opacity: 0.8;
+  padding: 20px;
+}
+
+.news-error {
+  color: #ff6b6b;
+}
+
+.news-warning {
+  font-size: 0.8rem;
+  color: #ffa500;
+  opacity: 0.7;
+  margin-top: 10px;
+}
+
+@media (max-width: 1200px) {
+  .news-title {
+    font-size: 1.5rem;
+  }
+  
+  .news-headline {
+    font-size: 1.2rem;
+  }
+  
+  .news-description {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 800px) {
+  .news-ticker {
+    height: 100px;
+  }
+  
+  .news-headline {
+    font-size: 1.1rem;
+  }
+  
+  .news-description {
+    font-size: 0.85rem;
+  }
+}
