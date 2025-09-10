@@ -1,130 +1,118 @@
+/* Quote of Day - Minimal Design */
 .quote {
   color: #ffffff;
   width: 100%;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 24px;
-  padding: 32px;
-  backdrop-filter: blur(20px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  transition: all 0.3s ease;
-  height: 100%;
+  max-width: 400px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  text-align: center;
-}
-
-.quote:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.12);
-  transform: translateY(-2px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+  text-align: left;
+  padding: 1rem;
 }
 
 .quote-title {
-  font-size: 1.5rem;
-  font-weight: 500;
-  margin-bottom: 24px;
-  color: rgba(255, 255, 255, 0.9);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.quote-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  flex: 1;
+  display: none;
 }
 
 .quote-text {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   line-height: 1.6;
-  margin-bottom: 24px;
+  margin-bottom: 1rem;
   font-style: italic;
-  max-width: 100%;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 300;
   position: relative;
-  font-weight: 400;
 }
 
-.quote-mark {
+.quote-text::before {
+  content: '"';
   font-size: 2rem;
-  opacity: 0.6;
-  font-weight: 300;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.3);
+  position: absolute;
+  left: -1rem;
+  top: -0.5rem;
+  font-family: serif;
+}
+
+.quote-text::after {
+  content: '"';
+  font-size: 2rem;
+  color: rgba(255, 255, 255, 0.3);
+  position: absolute;
+  right: -1rem;
+  bottom: -0.5rem;
+  font-family: serif;
 }
 
 .quote-author {
-  font-size: 1rem;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.8);
-  margin-bottom: 20px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 300;
+  text-align: right;
+  margin-bottom: 0.5rem;
 }
 
 .quote-tags {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: none;
 }
 
-.quote-tag {
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.6);
-  background: rgba(255, 255, 255, 0.05);
-  padding: 6px 12px;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  font-weight: 400;
-  text-transform: lowercase;
+.quote-loading,
+.quote-error {
+  font-size: 1rem;
+  opacity: 0.6;
+  text-align: left;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 300;
 }
 
-.quote-loading {
-  font-size: 1.2rem;
-  opacity: 0.8;
-  padding: 20px;
+.quote-error {
+  color: rgba(255, 107, 107, 0.7);
 }
 
-.quote-warning {
-  position: absolute;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 0.8rem;
-  color: #ffa500;
-  opacity: 0.7;
-}
-
+/* Responsive Design */
 @media (max-width: 1200px) {
-  .quote-title {
-    font-size: 1.4rem;
+  .quote {
+    max-width: 350px;
   }
   
   .quote-text {
-    font-size: 1.1rem;
+    font-size: 1rem;
   }
   
   .quote-author {
-    font-size: 1rem;
+    font-size: 0.85rem;
   }
 }
 
-@media (max-width: 800px) {
+@media (max-width: 768px) {
+  .quote {
+    max-width: 100%;
+    text-align: center;
+  }
+  
   .quote-text {
-    font-size: 1rem;
-    line-height: 1.4;
+    font-size: 0.95rem;
+    text-align: center;
+  }
+  
+  .quote-text::before,
+  .quote-text::after {
+    display: none;
   }
   
   .quote-author {
+    font-size: 0.8rem;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .quote-text {
     font-size: 0.9rem;
   }
   
-  .quote-tag {
-    font-size: 0.8rem;
+  .quote-author {
+    font-size: 0.75rem;
   }
+}
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
-import { roomsStore } from './stores/roomsStore'
+import { useGlobalStore } from './hooks/useGlobalStore'
 import Login from './components/Login'
 import TimeDate from './components/TimeDate'
 import Weather from './components/Weather'
@@ -9,37 +9,37 @@ import QuoteOfDay from './components/QuoteOfDay'
 import LightControl from './components/LightControl'
 import ClimateControl from './components/ClimateControl'
 import ChatGPTAssistant from './components/ChatGPTAssistant'
+import ErrorBoundary from './components/ErrorBoundary'
 import './App.css'
 
-function KioskApp() {
-  const [lastRefresh, setLastRefresh] = useState(Date.now())
-  const [currentPage, setCurrentPage] = useState('mirror') // 'mirror', 'lights', 'climate', or 'assistant'
-  const [showNavigation, setShowNavigation] = useState(false)
-  const [rooms, setRooms] = useState([])
+function SmartMirror() {
+  const [activePanel, setActivePanel] = useState(null) // 'lights', 'climate', 'assistant', or null
+  const [showControls, setShowControls] = useState(false)
   const { user, userProfile, loading, logout } = useAuth()
+  const { state, actions } = useGlobalStore()
 
-  // Debug logging
-  console.log('🔍 KioskApp Debug:', { currentPage, showNavigation, userExists: !!user })
-
+  // Initialize global store when user is available
   useEffect(() => {
-    // Auto-refresh every 10 seconds for aggressive real-time sync
-    const interval = setInterval(() => {
-      setLastRefresh(Date.now())
-    }, 10 * 1000) // 10 seconds for aggressive real-time sync
+    if (user && !state.app.isInitialized) {
+      console.log('🚀 Initializing smart mirror with user:', user.uid)
+      // Initialize immediately without waiting
+      actions.initialize(user.uid).catch(error => {
+        console.error('Initialization error:', error)
+      })
+    }
+  }, [user, state.app.isInitialized, actions])
 
-    return () => clearInterval(interval)
-  }, [])
-
-  // Show navigation on mouse movement or touch, hide after 3 seconds
+  // Show controls on user activity
   useEffect(() => {
     let hideTimeout
 
     const handleUserActivity = () => {
-      setShowNavigation(true)
+      setShowControls(true)
       clearTimeout(hideTimeout)
       hideTimeout = setTimeout(() => {
-        setShowNavigation(false)
-      }, 3000)
+        setShowControls(false)
+        setActivePanel(null)
+      }, 10000) // Hide after 10 seconds
     }
 
     document.addEventListener('mousemove', handleUserActivity)
@@ -52,36 +52,69 @@ function KioskApp() {
     }
   }, [])
 
-  // Set up real-time rooms subscription for stats
-  useEffect(() => {
-    let unsubscribe
-    if (user) {
-      // Initialize rooms data
-      roomsStore.fetchRooms(user.uid).then(() => {
-        setRooms([...roomsStore.rooms])
-      }).catch(err => {
-        console.error('Error loading rooms:', err)
-      })
-      
-      // Subscribe to real-time updates
-      unsubscribe = roomsStore.subscribe((updatedRooms) => {
-        console.log('🏠 KioskApp: Received rooms update for stats')
-        setRooms([...updatedRooms])
-      })
-    }
+  const openPanel = (panel) => {
+    setActivePanel(panel)
+    setShowControls(true)
+  }
 
-    return () => {
-      if (unsubscribe) {
-        unsubscribe()
-      }
-    }
-  }, [user])
+  const closePanel = () => {
+    setActivePanel(null)
+  }
 
   if (loading) {
     return (
-      <div className="kiosk-loading">
-        <h1>Clixsys Smart Mirror</h1>
-        <p>Initializing system...</p>
+      <div className="mirror-loading">
+        <div className="loading-content">
+          <h1>Clixsys Smart Mirror</h1>
+          <div className="loading-spinner"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show basic interface even if not fully initialized
+  if (!state.app.isInitialized) {
+    return (
+      <div className="smart-mirror">
+        <div className="mirror-content">
+          <div className="time-display">
+            <TimeDate />
+          </div>
+          <div className="weather-display">
+            <div className="weather">
+              <div className="current-weather">
+                <div className="current-temp">22°C</div>
+                <div className="current-description">Loading...</div>
+                <div className="current-location">London</div>
+              </div>
+            </div>
+          </div>
+          <div className="quote-display">
+            <div className="quote">
+              <div className="quote-text">Loading inspirational quote...</div>
+              <div className="quote-author">— Smart Mirror</div>
+            </div>
+          </div>
+          <div className="news-ticker">
+            <div className="news">
+              <div className="news-ticker">
+                <div className="news-ticker-content">
+                  <div className="news-headline">Loading news headlines...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="user-info">
+            <div className="user-greeting">
+              <span>Welcome, {userProfile?.name || user.email?.split('@')[0]}</span>
+            </div>
+            <div className="device-status">
+              <span className="status-item">0 lights on</span>
+              <span className="status-item">0 climate active</span>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -90,200 +123,136 @@ function KioskApp() {
     return <Login />
   }
 
-
-
-  if (currentPage === 'lights') {
-    return (
-      <div className="kiosk-app">
-        <nav className={`navigation ${showNavigation ? 'visible' : ''}`}>
-          <button 
-            className="nav-button"
-            onClick={() => setCurrentPage('mirror')}
-          >
-            Mirror
-          </button>
-          <button 
-            className="nav-button active"
-            onClick={() => setCurrentPage('lights')}
-          >
-            Lights
-          </button>
-          <button 
-            className="nav-button"
-            onClick={() => setCurrentPage('climate')}
-          >
-            Climate
-          </button>
-          <button 
-            className="nav-button"
-            onClick={() => setCurrentPage('assistant')}
-          >
-            Assistant
-          </button>
-          <button 
-            className="nav-button logout"
-            onClick={logout}
-          >
-            Logout
-          </button>
-        </nav>
-        <LightControl />
-      </div>
-    )
-  }
-
-  if (currentPage === 'assistant') {
-    return (
-      <div className="kiosk-app">
-        <nav className={`navigation ${showNavigation ? 'visible' : ''}`}>
-          <button 
-            className="nav-button"
-            onClick={() => setCurrentPage('mirror')}
-          >
-            Mirror
-          </button>
-          <button 
-            className="nav-button"
-            onClick={() => setCurrentPage('lights')}
-          >
-            Lights
-          </button>
-          <button 
-            className="nav-button"
-            onClick={() => setCurrentPage('climate')}
-          >
-            Climate
-          </button>
-          <button 
-            className="nav-button active"
-            onClick={() => setCurrentPage('assistant')}
-          >
-            Assistant
-          </button>
-          <button 
-            className="nav-button logout"
-            onClick={logout}
-          >
-            Logout
-          </button>
-        </nav>
-        <div className="full-page-assistant">
-          <ChatGPTAssistant />
-        </div>
-      </div>
-    )
-  }
-
-  if (currentPage === 'climate') {
-    return (
-      <div className="kiosk-app">
-        <nav className={`navigation ${showNavigation ? 'visible' : ''}`}>
-          <button 
-            className="nav-button"
-            onClick={() => setCurrentPage('mirror')}
-          >
-            Mirror
-          </button>
-          <button 
-            className="nav-button"
-            onClick={() => setCurrentPage('lights')}
-          >
-            Lights
-          </button>
-          <button 
-            className="nav-button"
-            onClick={() => setCurrentPage('climate')}
-          >
-            Climate
-          </button>
-          <button 
-            className="nav-button"
-            onClick={() => setCurrentPage('assistant')}
-          >
-            Assistant
-          </button>
-          <button 
-            className="nav-button logout"
-            onClick={logout}
-          >
-            Logout
-          </button>
-        </nav>
-        <ClimateControl />
-      </div>
-    )
-  }
-
   return (
-    <div className="kiosk-app">
-      <nav className={`navigation ${showNavigation ? 'visible' : ''}`}>
-        <button 
-          className="nav-button active"
-          onClick={() => setCurrentPage('mirror')}
-        >
-          Mirror
-        </button>
-        <button 
-          className="nav-button"
-          onClick={() => setCurrentPage('lights')}
-        >
-          Lights
-        </button>
-        <button 
-          className="nav-button"
-          onClick={() => setCurrentPage('climate')}
-        >
-          Climate
-        </button>
-        <button 
-          className="nav-button"
-          onClick={() => setCurrentPage('assistant')}
-        >
-          Assistant
-        </button>
-        <button 
-          className="nav-button logout"
-          onClick={logout}
-        >
-          Logout
-        </button>
-      </nav>
-      
-      <div className="mirror-grid">
-        <div className="time-section">
+    <div className="smart-mirror">
+      {/* Main Content */}
+      <div className="mirror-content">
+        {/* Time & Date - Top Center */}
+        <div className="time-display">
           <TimeDate />
         </div>
-        
-        <div className="weather-section">
-          <Weather refreshTrigger={lastRefresh} />
+
+        {/* Weather - Top Right */}
+        <div className="weather-display">
+          <Weather data={state.weather} />
         </div>
-        
-        <div className="news-section">
-          <NewsHeadlines refreshTrigger={lastRefresh} />
+
+        {/* Quote - Left Side */}
+        <div className="quote-display">
+          <QuoteOfDay data={state.quote} />
         </div>
-        
-        <div className="quote-section">
-          <QuoteOfDay refreshTrigger={lastRefresh} />
+
+        {/* News Ticker - Bottom */}
+        <div className="news-ticker">
+          <NewsHeadlines data={state.news} />
         </div>
-        
+
+        {/* User Info - Top Left */}
         <div className="user-info">
-          <p>Welcome, {userProfile?.name || user.email}</p>
-          <p>Role: {userProfile?.role || 'User'}</p>
-          <div className="device-stats">
-            <p>Lights: {rooms.reduce((acc, room) => acc + (room.devices?.filter(d => d.type === 'light' && d.state).length || 0), 0)} / {rooms.reduce((acc, room) => acc + (room.devices?.filter(d => d.type === 'light').length || 0), 0)} active</p>
-            <p>Climate: {rooms.reduce((acc, room) => acc + (room.devices?.filter(d => ['thermostat', 'fan', 'air_conditioner'].includes(d.type) && d.state).length || 0), 0)} / {rooms.reduce((acc, room) => acc + (room.devices?.filter(d => ['thermostat', 'fan', 'air_conditioner'].includes(d.type)).length || 0), 0)} active</p>
+          <div className="user-greeting">
+            <span>Welcome, {userProfile?.name || user.email?.split('@')[0]}</span>
+            {(state.weather.loading || state.news.loading || state.smartHome.loading) && (
+              <span className="refresh-indicator">🔄</span>
+            )}
+          </div>
+          <div className="device-status">
+            <span className="status-item">
+              {state.smartHome.devices.filter(d => d.type === 'light' && d.state).length} lights on
+            </span>
+            <span className="status-item">
+              {state.smartHome.devices.filter(d => ['thermostat', 'fan', 'air_conditioner'].includes(d.type) && d.state).length} climate active
+            </span>
           </div>
         </div>
       </div>
+
+      {/* Control Dock - Bottom Right */}
+      <div className={`control-dock ${showControls ? 'visible' : ''}`}>
+        <button 
+          className="control-btn lights-btn"
+          onClick={() => openPanel('lights')}
+          title="Lights Control"
+        >
+          <div className="btn-icon">💡</div>
+        </button>
+        
+        <button 
+          className="control-btn climate-btn"
+          onClick={() => openPanel('climate')}
+          title="Climate Control"
+        >
+          <div className="btn-icon">🌡️</div>
+        </button>
+        
+        <button 
+          className="control-btn assistant-btn"
+          onClick={() => openPanel('assistant')}
+          title="AI Assistant"
+        >
+          <div className="btn-icon">🤖</div>
+        </button>
+        
+        <button 
+          className="control-btn logout-btn"
+          onClick={logout}
+          title="Logout"
+        >
+          <div className="btn-icon">🚪</div>
+        </button>
+      </div>
+
+      {/* Overlay Panels */}
+      {activePanel === 'lights' && (
+        <div className="overlay-panel lights-panel">
+          <div className="panel-header">
+            <h2>Lights Control</h2>
+            <button className="close-btn" onClick={closePanel}>×</button>
+          </div>
+          <div className="panel-content">
+            <LightControl data={state.smartHome} />
+          </div>
+        </div>
+      )}
+
+      {activePanel === 'climate' && (
+        <div className="overlay-panel climate-panel">
+          <div className="panel-header">
+            <h2>Climate Control</h2>
+            <button className="close-btn" onClick={closePanel}>×</button>
+          </div>
+          <div className="panel-content">
+            <ClimateControl data={state.smartHome} />
+          </div>
+        </div>
+      )}
+
+      {activePanel === 'assistant' && (
+        <div className="overlay-panel assistant-panel">
+          <div className="panel-header">
+            <h2>AI Assistant</h2>
+            <button className="close-btn" onClick={closePanel}>×</button>
+          </div>
+          <div className="panel-content">
+            <ChatGPTAssistant data={state.assistant} actions={actions} />
+          </div>
+        </div>
+      )}
+
+      {/* Overlay Background */}
+      {activePanel && (
+        <div className="overlay-background" onClick={closePanel}></div>
+      )}
     </div>
   )
 }
 
 function App() {
   return (
-    <AuthProvider>
-      <KioskApp />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <SmartMirror />
+      </AuthProvider>
+    </ErrorBoundary>
   )
 }
 
