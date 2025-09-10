@@ -17,6 +17,8 @@ class RoomsStore {
     this.error = null
     this.listeners = []
     this.uiListeners = [] // For UI components to subscribe to changes
+    this.notifyTimeout = null
+    this.periodicNotifyInterval = null
   }
 
   async fetchRooms(userId, forceRefresh = false) {
@@ -140,8 +142,8 @@ class RoomsStore {
             // Update only the specific room's devices instead of recreating all rooms
             this.rooms[roomIndex].devices = updatedDevices;
             
-            // Debounced UI notification
-            this.notifyListeners();
+            // Don't notify immediately for device updates - let the debounce handle it
+            // this.notifyListeners();
           } else {
             console.error(`❌ Room ${roomDoc.id} not found in local rooms array`);
           }
@@ -155,6 +157,7 @@ class RoomsStore {
 
       this.rooms = updatedRooms
       this.notifyListeners()
+      this.startPeriodicNotifications()
     }, (error) => {
       console.error('❌ Firebase listener error for rooms:', error)
     })
@@ -253,20 +256,41 @@ class RoomsStore {
   }
   
   notifyListeners() {
-    // Force state update by creating completely new objects
-    const freshRooms = this.rooms.map(room => ({
-      id: room.id, // Ensure ID is preserved
-      ...room,
-      devices: room.devices.map(device => ({ ...device }))
-    }));
+    // Debounce notifications to prevent excessive re-renders
+    if (this.notifyTimeout) {
+      clearTimeout(this.notifyTimeout);
+    }
     
-    this.uiListeners.forEach((callback, index) => {
-      try {
-        callback(freshRooms);
-      } catch (error) {
-        console.error(`❌ Error in listener ${index + 1}:`, error);
+    this.notifyTimeout = setTimeout(() => {
+      // Force state update by creating completely new objects
+      const freshRooms = this.rooms.map(room => ({
+        id: room.id, // Ensure ID is preserved
+        ...room,
+        devices: room.devices.map(device => ({ ...device }))
+      }));
+      
+      this.uiListeners.forEach((callback, index) => {
+        try {
+          callback(freshRooms);
+        } catch (error) {
+          console.error(`❌ Error in listener ${index + 1}:`, error);
+        }
+      });
+    }, 100); // 100ms debounce to reduce lag
+  }
+
+  startPeriodicNotifications() {
+    // Clear existing interval
+    if (this.periodicNotifyInterval) {
+      clearInterval(this.periodicNotifyInterval);
+    }
+    
+    // Notify UI every 500ms to reduce lag
+    this.periodicNotifyInterval = setInterval(() => {
+      if (this.uiListeners.length > 0) {
+        this.notifyListeners();
       }
-    });
+    }, 500);
   }
 
   cleanup() {
@@ -278,6 +302,12 @@ class RoomsStore {
     if (this.notifyTimeout) {
       clearTimeout(this.notifyTimeout);
       this.notifyTimeout = null;
+    }
+    
+    // Clear periodic notifications
+    if (this.periodicNotifyInterval) {
+      clearInterval(this.periodicNotifyInterval);
+      this.periodicNotifyInterval = null;
     }
   }
 }
