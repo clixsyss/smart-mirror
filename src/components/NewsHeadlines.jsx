@@ -1,35 +1,36 @@
-import './NewsHeadlines.css';
-
 const NewsHeadlines = ({ data }) => {
   const { headlines, loading, error } = data || {};
 
   if (loading) {
     return (
-      <div className="news">
-        <div className="news-loading">Loading news...</div>
+      <div className="news-content">
+        <div className="news-item">
+          <div className="news-bullet"></div>
+          <span className="news-text">Loading news...</span>
+        </div>
       </div>
     );
   }
 
   if (error || !headlines || headlines.length === 0) {
     return (
-      <div className="news">
-        <div className="news-error">No news available</div>
+      <div className="news-content">
+        <div className="news-item">
+          <div className="news-bullet"></div>
+          <span className="news-text">No news available</span>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="news">
-      <div className="news-ticker">
-        <div className="news-ticker-content">
-          {headlines.map((item, index) => (
-            <div key={index} className="news-headline">
-              {item.title}
-            </div>
-          ))}
+    <div className="news-content">
+      {headlines.slice(0, 5).map((item, index) => (
+        <div key={index} className="news-item">
+          <div className="news-bullet"></div>
+          <span className="news-text">{item.title}</span>
         </div>
-      </div>
+      ))}
     </div>
   );
 };

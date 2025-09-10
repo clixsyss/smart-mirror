@@ -1,43 +1,62 @@
-/* Light Control - Overlay Panel Design */
+/* Light Control Modal Styles */
 .light-control {
-  padding: 0;
-  margin: 0;
-  background: transparent;
-  color: #ffffff;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  width: 100%;
   height: 100%;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-.light-header {
-  display: none;
+.loading, .error {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1rem;
+  padding: 2rem;
+  font-weight: 300;
 }
 
-.light-title {
-  display: none;
-}
-
-.light-subtitle {
-  display: none;
+.error {
+  color: rgba(255, 59, 48, 0.8);
 }
 
 .rooms-grid {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  padding: 0;
+  gap: 1.5rem;
+  max-height: 100%;
+  overflow-y: auto;
 }
 
 .room-card {
-  background: rgba(255, 255, 255, 0.03);
+  background: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  padding: 1rem;
-  transition: all 0.3s ease;
+  border-radius: 16px;
+  padding: 1.5rem;
+  backdrop-filter: blur(20px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.room-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0%, transparent 60%);
+  pointer-events: none;
+  border-radius: 16px;
 }
 
 .room-card:hover {
-  background: rgba(255, 255, 255, 0.05);
+  transform: translateY(-2px);
+  box-shadow: 
+    0 12px 32px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.12);
 }
 
@@ -45,195 +64,215 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 0.75rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+  z-index: 2;
 }
 
 .room-name {
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   font-weight: 500;
   color: #ffffff;
   margin: 0;
+  letter-spacing: -0.01em;
 }
 
 .room-toggle {
-  width: 50px;
-  height: 25px;
+  width: 48px;
+  height: 24px;
+  border: none;
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 25px;
   position: relative;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.room-toggle.active {
-  background: #00ff88;
-  border-color: #00ff88;
-}
-
-.room-toggle::after {
+.room-toggle::before {
   content: '';
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 19px;
-  height: 19px;
-  background: #ffffff;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.6);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-.room-toggle.active::after {
-  transform: translateX(25px);
+.room-toggle.active {
+  background: 
+    linear-gradient(135deg, rgba(255, 193, 7, 0.8) 0%, rgba(255, 193, 7, 0.6) 100%);
+  border-color: rgba(255, 193, 7, 0.8);
+}
+
+.room-toggle.active::before {
+  transform: translateX(24px);
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .devices-list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
+  position: relative;
+  z-index: 2;
 }
 
 .device-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem;
+  padding: 1rem;
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  transition: all 0.3s ease;
+  border-radius: 12px;
+  transition: all 0.2s ease;
 }
 
 .device-item:hover {
   background: rgba(255, 255, 255, 0.04);
   border-color: rgba(255, 255, 255, 0.08);
+  transform: translateX(4px);
 }
 
 .device-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+  flex: 1;
 }
 
 .device-name {
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 400;
   color: #ffffff;
-  margin: 0;
+  margin: 0 0 0.25rem 0;
+  letter-spacing: -0.01em;
 }
 
 .device-type {
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  font-weight: 300;
 }
 
 .device-controls {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
 .device-toggle {
   width: 40px;
   height: 20px;
+  border: none;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 20px;
   position: relative;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.device-toggle::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .device-toggle.active {
-  background: #00ff88;
-  border-color: #00ff88;
+  background: 
+    linear-gradient(135deg, rgba(255, 193, 7, 0.8) 0%, rgba(255, 193, 7, 0.6) 100%);
+  border-color: rgba(255, 193, 7, 0.8);
 }
 
-.device-toggle::after {
-  content: '';
-  position: absolute;
-  top: 1px;
-  left: 1px;
-  width: 16px;
-  height: 16px;
-  background: #ffffff;
-  border-radius: 50%;
-  transition: all 0.3s ease;
-}
-
-.device-toggle.active::after {
+.device-toggle.active::before {
   transform: translateX(20px);
+  background: #ffffff;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+}
+
+.device-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .brightness-slider {
   width: 80px;
   height: 4px;
-  background: rgba(255, 255, 255, 0.1);
   border-radius: 2px;
+  background: rgba(255, 255, 255, 0.1);
   outline: none;
   cursor: pointer;
   -webkit-appearance: none;
+  appearance: none;
 }
 
 .brightness-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
+  appearance: none;
   width: 16px;
   height: 16px;
-  background: #00ff88;
   border-radius: 50%;
+  background: 
+    linear-gradient(135deg, rgba(255, 193, 7, 0.8) 0%, rgba(255, 193, 7, 0.6) 100%);
   cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.brightness-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .brightness-slider::-moz-range-thumb {
   width: 16px;
   height: 16px;
-  background: #00ff88;
   border-radius: 50%;
+  background: 
+    linear-gradient(135deg, rgba(255, 193, 7, 0.8) 0%, rgba(255, 193, 7, 0.6) 100%);
   cursor: pointer;
-  border: none;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.brightness-slider:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
 .brightness-value {
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.6);
-  min-width: 30px;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 300;
+  min-width: 35px;
   text-align: center;
-}
-
-.loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.9rem;
-}
-
-.error {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-  color: #ff6b6b;
-  font-size: 0.9rem;
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .rooms-grid {
-    gap: 0.75rem;
-  }
-  
   .room-card {
-    padding: 0.75rem;
+    padding: 1rem;
   }
   
   .device-item {
-    padding: 0.5rem;
+    padding: 0.75rem;
+  }
+  
+  .device-controls {
+    gap: 0.75rem;
   }
   
   .brightness-slider {

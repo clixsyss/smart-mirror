@@ -1,17 +1,12 @@
 import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { roomsStore } from '../stores/roomsStore';
 import './ClimateControl.css';
 
-const ClimateControl = ({ data }) => {
+const ClimateControl = ({ data, actions }) => {
   const [animatingDevices, setAnimatingDevices] = useState(new Set());
-  const { user } = useAuth();
   
   const { rooms = [], loading, error } = data || {};
 
   const toggleRoomClimate = async (roomId) => {
-    if (!user) return;
-    
     const room = rooms.find(r => r.id === roomId);
     if (!room) return;
 
@@ -28,7 +23,7 @@ const ClimateControl = ({ data }) => {
     try {
       // Update all climate devices in the room
       for (const device of climateDevices) {
-        await roomsStore.updateDeviceState(roomId, device.id, newState);
+        await actions.setClimateState(roomId, device.id, newState);
       }
     } catch (error) {
       console.error('Error toggling room climate:', error);
@@ -36,13 +31,11 @@ const ClimateControl = ({ data }) => {
   };
 
   const toggleDevice = async (roomId, deviceId, currentState) => {
-    if (!user) return;
-    
     const newState = !currentState;
     setAnimatingDevices(prev => new Set([...prev, deviceId]));
     
     try {
-      await roomsStore.updateDeviceState(roomId, deviceId, newState);
+      await actions.setClimateState(roomId, deviceId, newState);
     } catch (error) {
       console.error('Error toggling device:', error);
     } finally {
@@ -57,20 +50,16 @@ const ClimateControl = ({ data }) => {
   };
 
   const updateTemperature = async (roomId, deviceId, temperature) => {
-    if (!user) return;
-    
     try {
-      await roomsStore.updateDeviceTemperature(roomId, deviceId, temperature);
+      await actions.setClimateTemperature(roomId, deviceId, temperature);
     } catch (error) {
       console.error('Error updating temperature:', error);
     }
   };
 
   const updateMode = async (roomId, deviceId, mode) => {
-    if (!user) return;
-    
     try {
-      await roomsStore.updateDeviceMode(roomId, deviceId, mode);
+      await actions.setClimateMode(roomId, deviceId, mode);
     } catch (error) {
       console.error('Error updating mode:', error);
     }

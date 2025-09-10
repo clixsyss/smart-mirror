@@ -1,118 +1,61 @@
-/* Quote of Day - Minimal Design */
 .quote {
+  text-align: center;
   color: #ffffff;
-  width: 100%;
-  max-width: 400px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  text-align: left;
+  align-items: center;
   padding: 1rem;
-}
-
-.quote-title {
-  display: none;
+  position: relative;
 }
 
 .quote-text {
   font-size: 1.1rem;
   line-height: 1.6;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   font-style: italic;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.9);
   font-weight: 300;
   position: relative;
 }
 
 .quote-text::before {
   content: '"';
-  font-size: 2rem;
+  font-size: 1.5rem;
   color: rgba(255, 255, 255, 0.3);
   position: absolute;
-  left: -1rem;
-  top: -0.5rem;
+  left: -0.8rem;
+  top: -0.3rem;
   font-family: serif;
+  font-weight: 100;
 }
 
 .quote-text::after {
   content: '"';
-  font-size: 2rem;
+  font-size: 1.5rem;
   color: rgba(255, 255, 255, 0.3);
   position: absolute;
-  right: -1rem;
-  bottom: -0.5rem;
+  right: -0.8rem;
+  bottom: -0.3rem;
   font-family: serif;
+  font-weight: 100;
 }
 
 .quote-author {
   font-size: 0.9rem;
   color: rgba(255, 255, 255, 0.6);
   font-weight: 300;
-  text-align: right;
-  margin-bottom: 0.5rem;
+  font-style: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.quote-tags {
-  display: none;
-}
-
-.quote-loading,
-.quote-error {
-  font-size: 1rem;
-  opacity: 0.6;
-  text-align: left;
-  color: rgba(255, 255, 255, 0.5);
-  font-weight: 300;
-}
-
-.quote-error {
-  color: rgba(255, 107, 107, 0.7);
-}
-
-/* Responsive Design */
-@media (max-width: 1200px) {
-  .quote {
-    max-width: 350px;
-  }
-  
+@media (max-width: 768px) {
   .quote-text {
     font-size: 1rem;
   }
   
   .quote-author {
-    font-size: 0.85rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .quote {
-    max-width: 100%;
-    text-align: center;
-  }
-  
-  .quote-text {
-    font-size: 0.95rem;
-    text-align: center;
-  }
-  
-  .quote-text::before,
-  .quote-text::after {
-    display: none;
-  }
-  
-  .quote-author {
     font-size: 0.8rem;
-    text-align: center;
   }
-}
-
-@media (max-width: 480px) {
-  .quote-text {
-    font-size: 0.9rem;
-  }
-  
-  .quote-author {
-    font-size: 0.75rem;
-  }
-}
 }

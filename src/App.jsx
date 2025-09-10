@@ -10,26 +10,62 @@ import LightControl from './components/LightControl'
 import ClimateControl from './components/ClimateControl'
 import ChatGPTAssistant from './components/ChatGPTAssistant'
 import ErrorBoundary from './components/ErrorBoundary'
+import SettingsModal from './components/SettingsModal'
 import './App.css'
 
+// Modern Icon Components
+const LightIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1z"/>
+    <path d="M12 2C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/>
+  </svg>
+)
+
+const ClimateIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/>
+  </svg>
+)
+
+const AssistantIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+    <path d="M2 17l10 5 10-5"/>
+    <path d="M2 12l10 5 10-5"/>
+  </svg>
+)
+
+const LogoutIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+    <polyline points="16,17 21,12 16,7"/>
+    <line x1="21" y1="12" x2="9" y2="12"/>
+  </svg>
+)
+
+const SettingsIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="3"/>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+  </svg>
+)
+
 function SmartMirror() {
-  const [activePanel, setActivePanel] = useState(null) // 'lights', 'climate', 'assistant', or null
+  const [activePanel, setActivePanel] = useState(null) // 'lights', 'climate', 'assistant', 'settings', or null
   const [showControls, setShowControls] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
   const { user, userProfile, loading, logout } = useAuth()
   const { state, actions } = useGlobalStore()
 
-  // Initialize global store when user is available
   useEffect(() => {
     if (user && !state.app.isInitialized) {
       console.log('🚀 Initializing smart mirror with user:', user.uid)
-      // Initialize immediately without waiting
       actions.initialize(user.uid).catch(error => {
         console.error('Initialization error:', error)
       })
     }
   }, [user, state.app.isInitialized, actions])
 
-  // Show controls on user activity
   useEffect(() => {
     let hideTimeout
 
@@ -61,11 +97,20 @@ function SmartMirror() {
     setActivePanel(null)
   }
 
+  const openSettings = () => {
+    setShowSettings(true)
+    setShowControls(true)
+  }
+
+  const closeSettings = () => {
+    setShowSettings(false)
+  }
+
   if (loading) {
     return (
       <div className="mirror-loading">
         <div className="loading-content">
-          <h1>Clixsys Smart Mirror</h1>
+          <h1>Smart Mirror</h1>
           <div className="loading-spinner"></div>
           <p>Loading...</p>
         </div>
@@ -78,41 +123,37 @@ function SmartMirror() {
     return (
       <div className="smart-mirror">
         <div className="mirror-content">
-          <div className="time-display">
+          <div className="card time-card">
             <TimeDate />
           </div>
-          <div className="weather-display">
-            <div className="weather">
-              <div className="current-weather">
-                <div className="current-temp">22°C</div>
-                <div className="current-description">Loading...</div>
-                <div className="current-location">London</div>
+          <div className="card weather-card">
+            <Weather data={state.weather} />
+          </div>
+          <div className="card quote-card">
+            <QuoteOfDay data={state.quote} />
+          </div>
+          <div className="services-grid">
+            <div className="service-card" onClick={() => openPanel('lights')}>
+              <div className="service-icon">
+                <LightIcon />
               </div>
+              <div className="service-title">Lights</div>
             </div>
-          </div>
-          <div className="quote-display">
-            <div className="quote">
-              <div className="quote-text">Loading inspirational quote...</div>
-              <div className="quote-author">— Smart Mirror</div>
-            </div>
-          </div>
-          <div className="news-ticker">
-            <div className="news">
-              <div className="news-ticker">
-                <div className="news-ticker-content">
-                  <div className="news-headline">Loading news headlines...</div>
-                </div>
+            <div className="service-card" onClick={() => openPanel('climate')}>
+              <div className="service-icon">
+                <ClimateIcon />
               </div>
+              <div className="service-title">Climate</div>
+            </div>
+            <div className="service-card" onClick={() => openPanel('assistant')}>
+              <div className="service-icon">
+                <AssistantIcon />
+              </div>
+              <div className="service-title">Assistant</div>
             </div>
           </div>
-          <div className="user-info">
-            <div className="user-greeting">
-              <span>Welcome, {userProfile?.name || user.email?.split('@')[0]}</span>
-            </div>
-            <div className="device-status">
-              <span className="status-item">0 lights on</span>
-              <span className="status-item">0 climate active</span>
-            </div>
+          <div className="news-card">
+            <NewsHeadlines data={state.news} />
           </div>
         </div>
       </div>
@@ -125,55 +166,66 @@ function SmartMirror() {
 
   return (
     <div className="smart-mirror">
-      {/* Main Content */}
+      {/* Main Content - Two Column Grid */}
       <div className="mirror-content">
-        {/* Time & Date - Top Center */}
-        <div className="time-display">
+        {/* Time & Date Card */}
+        <div className="card time-card">
           <TimeDate />
         </div>
 
-        {/* Weather - Top Right */}
-        <div className="weather-display">
+        {/* Weather Card */}
+        <div className="card weather-card">
           <Weather data={state.weather} />
         </div>
 
-        {/* Quote - Left Side */}
-        <div className="quote-display">
+        {/* Quote Card */}
+        <div className="card quote-card">
           <QuoteOfDay data={state.quote} />
         </div>
 
-        {/* News Ticker - Bottom */}
-        <div className="news-ticker">
-          <NewsHeadlines data={state.news} />
+        {/* Services Grid */}
+        <div className="services-grid">
+          {/* Lights Service Card */}
+          <div className="service-card" onClick={() => openPanel('lights')}>
+            <div className="service-icon">
+              <LightIcon />
+            </div>
+            <div className="service-title">Lights</div>
+          </div>
+
+          {/* Climate Service Card */}
+          <div className="service-card" onClick={() => openPanel('climate')}>
+            <div className="service-icon">
+              <ClimateIcon />
+            </div>
+            <div className="service-title">Climate</div>
+          </div>
+
+          {/* AI Assistant Service Card */}
+          <div className="service-card" onClick={() => openPanel('assistant')}>
+            <div className="service-icon">
+              <AssistantIcon />
+            </div>
+            <div className="service-title">Assistant</div>
+          </div>
         </div>
 
-        {/* User Info - Top Left */}
-        <div className="user-info">
-          <div className="user-greeting">
-            <span>Welcome, {userProfile?.name || user.email?.split('@')[0]}</span>
-            {(state.weather.loading || state.news.loading || state.smartHome.loading) && (
-              <span className="refresh-indicator">🔄</span>
-            )}
-          </div>
-          <div className="device-status">
-            <span className="status-item">
-              {state.smartHome.devices.filter(d => d.type === 'light' && d.state).length} lights on
-            </span>
-            <span className="status-item">
-              {state.smartHome.devices.filter(d => ['thermostat', 'fan', 'air_conditioner'].includes(d.type) && d.state).length} climate active
-            </span>
-          </div>
+        {/* News Card */}
+        <div className="news-card">
+          <NewsHeadlines data={state.news} />
         </div>
       </div>
 
-      {/* Control Dock - Bottom Right */}
+      {/* Control Dock - Bottom */}
       <div className={`control-dock ${showControls ? 'visible' : ''}`}>
         <button 
           className="control-btn lights-btn"
           onClick={() => openPanel('lights')}
           title="Lights Control"
         >
-          <div className="btn-icon">💡</div>
+          <div className="btn-icon">
+            <LightIcon />
+          </div>
         </button>
         
         <button 
@@ -181,7 +233,9 @@ function SmartMirror() {
           onClick={() => openPanel('climate')}
           title="Climate Control"
         >
-          <div className="btn-icon">🌡️</div>
+          <div className="btn-icon">
+            <ClimateIcon />
+          </div>
         </button>
         
         <button 
@@ -189,7 +243,9 @@ function SmartMirror() {
           onClick={() => openPanel('assistant')}
           title="AI Assistant"
         >
-          <div className="btn-icon">🤖</div>
+          <div className="btn-icon">
+            <AssistantIcon />
+          </div>
         </button>
         
         <button 
@@ -197,45 +253,90 @@ function SmartMirror() {
           onClick={logout}
           title="Logout"
         >
-          <div className="btn-icon">🚪</div>
+          <div className="btn-icon">
+            <LogoutIcon />
+          </div>
         </button>
       </div>
 
-      {/* Overlay Panels */}
+      {/* Beautiful Modal Panels */}
       {activePanel === 'lights' && (
-        <div className="overlay-panel lights-panel">
-          <div className="panel-header">
-            <h2>Lights Control</h2>
-            <button className="close-btn" onClick={closePanel}>×</button>
-          </div>
-          <div className="panel-content">
-            <LightControl data={state.smartHome} />
+        <div className="modal-overlay">
+          <div className="control-modal lights-modal">
+            <div className="modal-header">
+              <div className="modal-icon">
+                <LightIcon />
+              </div>
+              <div className="modal-title">
+                <h2>Lights Control</h2>
+                <p>Manage your smart lighting</p>
+              </div>
+              <button className="modal-close-btn" onClick={closePanel}>×</button>
+            </div>
+            <div className="modal-content">
+              <LightControl data={state.smartHome} actions={actions} />
+            </div>
           </div>
         </div>
       )}
 
       {activePanel === 'climate' && (
-        <div className="overlay-panel climate-panel">
-          <div className="panel-header">
-            <h2>Climate Control</h2>
-            <button className="close-btn" onClick={closePanel}>×</button>
-          </div>
-          <div className="panel-content">
-            <ClimateControl data={state.smartHome} />
+        <div className="modal-overlay">
+          <div className="control-modal climate-modal">
+            <div className="modal-header">
+              <div className="modal-icon">
+                <ClimateIcon />
+              </div>
+              <div className="modal-title">
+                <h2>Climate Control</h2>
+                <p>Adjust temperature and climate</p>
+              </div>
+              <button className="modal-close-btn" onClick={closePanel}>×</button>
+            </div>
+            <div className="modal-content">
+              <ClimateControl data={state.smartHome} actions={actions} />
+            </div>
           </div>
         </div>
       )}
 
       {activePanel === 'assistant' && (
-        <div className="overlay-panel assistant-panel">
-          <div className="panel-header">
-            <h2>AI Assistant</h2>
-            <button className="close-btn" onClick={closePanel}>×</button>
-          </div>
-          <div className="panel-content">
-            <ChatGPTAssistant data={state.assistant} actions={actions} />
+        <div className="modal-overlay">
+          <div className="control-modal assistant-modal">
+            <div className="modal-header">
+              <div className="modal-icon">
+                <AssistantIcon />
+              </div>
+              <div className="modal-title">
+                <h2>AI Assistant</h2>
+                <p>Chat with your smart assistant</p>
+              </div>
+              <button className="modal-close-btn" onClick={closePanel}>×</button>
+            </div>
+            <div className="modal-content">
+              <ChatGPTAssistant data={state.assistant} actions={actions} />
+            </div>
           </div>
         </div>
+      )}
+
+      {/* Settings Button - Bottom Right */}
+      <button 
+        className="settings-btn"
+        onClick={openSettings}
+        title="Settings"
+      >
+        <SettingsIcon />
+      </button>
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <SettingsModal 
+          onClose={closeSettings}
+          state={state}
+          actions={actions}
+          logout={logout}
+        />
       )}
 
       {/* Overlay Background */}

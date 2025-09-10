@@ -1,18 +1,37 @@
-/* Smart Mirror - Minimal Dark Theme */
+/* Smart Mirror - Clean Futuristic Design */
 .smart-mirror {
   min-height: 100vh;
-  background: #000000;
+  background: 
+    radial-gradient(ellipse at 20% 20%, rgba(255, 255, 255, 0.02) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(255, 255, 255, 0.01) 0%, transparent 50%),
+    linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0f0f0f 100%);
   color: #ffffff;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   position: relative;
   overflow: hidden;
   font-weight: 300;
   line-height: 1.4;
-  /* Performance optimizations */
   will-change: transform;
   transform: translateZ(0);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Subtle Grid Background */
+.smart-mirror::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.3;
 }
 
 /* Loading Screen */
@@ -51,144 +70,310 @@
   100% { transform: rotate(360deg); }
 }
 
-/* Main Content Layout */
+/* Main Layout - Two Column Grid */
 .mirror-content {
   position: relative;
   width: 100%;
   height: 100vh;
   display: grid;
   grid-template-areas: 
-    "user time weather"
-    "quote time weather"
-    "quote . ."
-    "news news news";
-  grid-template-columns: 1fr 2fr 1fr;
-  grid-template-rows: auto auto 1fr auto;
-  padding: 2rem;
+    "time weather"
+    "quote services"
+    "news services";
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto 1fr;
   gap: 2rem;
+  padding: 2rem;
+  z-index: 2;
+  overflow-y: auto;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-/* Time Display - Center Top */
-.time-display {
+/* Grid Areas */
+.time-card {
   grid-area: time;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
 }
 
-/* Weather Display - Top Right */
-.weather-display {
+.weather-card {
   grid-area: weather;
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-end;
 }
 
-/* Quote Display - Left Side */
-.quote-display {
+.quote-card {
   grid-area: quote;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  max-width: 400px;
 }
 
-/* News Ticker - Bottom */
-.news-ticker {
+.news-card {
   grid-area: news;
+}
+
+.services-grid {
+  grid-area: services;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Clean Card Base */
+.card {
+  background: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 2.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  width: 100%;
+  height: 100%;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, transparent 60%);
+  pointer-events: none;
+  border-radius: 24px;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 
+    0 16px 48px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Clean Service Cards */
+.service-card {
+  background: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 8px 24px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.service-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, transparent 60%);
+  pointer-events: none;
+  border-radius: 20px;
+}
+
+.service-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 
+    0 16px 40px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Clean Service Icons */
+.service-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 60px;
-  background: rgba(255, 255, 255, 0.02);
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  margin-bottom: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition: all 0.3s ease;
+  position: relative;
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-/* User Info - Top Left */
-.user-info {
-  grid-area: user;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
+.service-card:hover .service-icon {
+  background: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 100%);
+  transform: scale(1.05);
+  box-shadow: 
+    0 8px 24px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
-.user-greeting {
-  font-size: 1.1rem;
-  color: rgba(255, 255, 255, 0.8);
+.service-title {
+  font-size: 1.3rem;
+  font-weight: 500;
+  color: #ffffff;
   margin-bottom: 0.5rem;
-  font-weight: 400;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  letter-spacing: -0.01em;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
 }
 
-.refresh-indicator {
-  font-size: 0.8rem;
-  animation: spin 1s linear infinite;
-  opacity: 0.6;
+/* News Card */
+.news-card {
+  background: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 2.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  width: 100%;
+  height: 100%;
 }
 
-.device-status {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+.news-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, transparent 60%);
+  pointer-events: none;
+  border-radius: 24px;
 }
 
-.status-item {
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.6);
-  font-weight: 300;
-}
-
-/* Control Dock - Bottom Right */
-.control-dock {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
+.news-content {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.news-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.news-item:last-child {
+  border-bottom: none;
+}
+
+.news-item:hover {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin: 0 -0.75rem;
+  transform: translateX(4px);
+}
+
+.news-bullet {
+  width: 4px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  margin-top: 0.5rem;
+  flex-shrink: 0;
+}
+
+.news-text {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.5;
+  font-weight: 300;
+}
+
+/* Control Dock */
+.control-dock {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 1rem;
   opacity: 0;
-  transform: translateY(20px);
+  transform: translateX(-50%) translateY(20px);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 100;
-  /* Performance optimizations */
   will-change: transform, opacity;
   backface-visibility: hidden;
+  background: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 1.5rem;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .control-dock.visible {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateX(-50%) translateY(0);
 }
 
 .control-btn {
-  width: 60px;
-  height: 60px;
+  width: 48px;
+  height: 48px;
   border: none;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.05);
+  background: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.03) 100%);
   color: #ffffff;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  position: relative;
+  overflow: hidden;
 }
 
 .control-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
   transform: scale(1.05);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 
+    0 8px 24px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .btn-icon {
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   filter: grayscale(100%) brightness(0.8);
   transition: all 0.3s ease;
 }
@@ -197,91 +382,229 @@
   filter: grayscale(0%) brightness(1);
 }
 
-.lights-btn:hover {
-  background: rgba(255, 255, 0, 0.1);
-  border-color: rgba(255, 255, 0, 0.3);
-}
-
-.climate-btn:hover {
-  background: rgba(0, 255, 255, 0.1);
-  border-color: rgba(0, 255, 255, 0.3);
-}
-
-.assistant-btn:hover {
-  background: rgba(255, 0, 255, 0.1);
-  border-color: rgba(255, 0, 255, 0.3);
-}
-
-.logout-btn:hover {
-  background: rgba(255, 0, 0, 0.1);
-  border-color: rgba(255, 0, 0, 0.3);
-}
-
-/* Overlay Panels */
-.overlay-panel {
+/* Beautiful Modal Panels */
+.modal-overlay {
   position: fixed;
   top: 0;
-  right: 0;
-  width: 400px;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.95);
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    radial-gradient(ellipse at center, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.9) 100%);
   backdrop-filter: blur(20px);
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
   z-index: 1000;
-  transform: translateX(100%);
-  animation: slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  display: flex;
-  flex-direction: column;
-  /* Performance optimizations */
-  will-change: transform;
-  backface-visibility: hidden;
-  contain: layout style paint;
-}
-
-@keyframes slideInRight {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
-}
-
-.panel-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  animation: modalFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.control-modal {
+  background: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+  backdrop-filter: blur(30px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 32px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: 
+    0 32px 80px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  animation: modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.control-modal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, transparent 60%);
+  pointer-events: none;
+  border-radius: 32px;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
   padding: 2rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, transparent 100%);
+  position: relative;
+  z-index: 2;
 }
 
-.panel-header h2 {
-  font-size: 1.5rem;
+.modal-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  box-shadow: 
+    0 8px 24px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.modal-icon svg {
+  width: 24px;
+  height: 24px;
+  color: #ffffff;
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.3));
+}
+
+.modal-title {
+  flex: 1;
+}
+
+.modal-title h2 {
+  font-size: 1.6rem;
   font-weight: 300;
   color: #ffffff;
-  margin: 0;
+  margin: 0 0 0.25rem 0;
+  letter-spacing: -0.01em;
 }
 
-.close-btn {
-  width: 40px;
-  height: 40px;
+.modal-title p {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+  font-weight: 300;
+}
+
+.modal-close-btn {
+  width: 44px;
+  height: 44px;
   border: none;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.05);
+  background: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
   color: #ffffff;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.5rem;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(20px);
 }
 
-.close-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  transform: scale(1.1);
+.modal-close-btn:hover {
+  background: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 100%);
+  transform: scale(1.05);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
-.panel-content {
+.modal-content {
   flex: 1;
   padding: 2rem;
   overflow-y: auto;
+  position: relative;
+  z-index: 2;
+}
+
+/* Modal-specific styling */
+.lights-modal .modal-icon {
+  background: 
+    linear-gradient(135deg, rgba(255, 193, 7, 0.2) 0%, rgba(255, 193, 7, 0.1) 100%);
+  border-color: rgba(255, 193, 7, 0.3);
+}
+
+.climate-modal .modal-icon {
+  background: 
+    linear-gradient(135deg, rgba(0, 123, 255, 0.2) 0%, rgba(0, 123, 255, 0.1) 100%);
+  border-color: rgba(0, 123, 255, 0.3);
+}
+
+.assistant-modal .modal-icon {
+  background: 
+    linear-gradient(135deg, rgba(108, 117, 125, 0.2) 0%, rgba(108, 117, 125, 0.1) 100%);
+  border-color: rgba(108, 117, 125, 0.3);
+}
+
+@keyframes modalFadeIn {
+  from { 
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to { 
+    opacity: 1;
+    backdrop-filter: blur(20px);
+  }
+}
+
+@keyframes modalSlideIn {
+  from { 
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+  to { 
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Settings Button - Bottom Right */
+.settings-btn {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 50%;
+  background: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  z-index: 100;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.settings-btn:hover {
+  background: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 100%);
+  transform: scale(1.05);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.settings-btn svg {
+  width: 24px;
+  height: 24px;
+  filter: grayscale(100%) brightness(0.8);
+  transition: all 0.3s ease;
+}
+
+.settings-btn:hover svg {
+  filter: grayscale(0%) brightness(1);
 }
 
 /* Overlay Background */
@@ -291,8 +614,9 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(5px);
+  background: 
+    radial-gradient(ellipse at center, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.7) 100%);
+  backdrop-filter: blur(8px);
   z-index: 999;
   animation: fadeIn 0.3s ease;
 }
@@ -303,63 +627,95 @@
 }
 
 /* Responsive Design */
-@media (max-width: 1200px) {
-  .mirror-content {
-    grid-template-areas: 
-      "user time"
-      "quote weather"
-      "quote ."
-      "news news";
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto auto 1fr auto;
-    padding: 1.5rem;
-    gap: 1.5rem;
-  }
-  
-  .overlay-panel {
-    width: 350px;
-  }
-}
-
 @media (max-width: 768px) {
   .mirror-content {
     grid-template-areas: 
       "time"
       "weather"
       "quote"
+      "services"
       "news";
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto auto;
+    grid-template-rows: auto auto auto auto auto;
     padding: 1rem;
-    gap: 1rem;
+    gap: 1.5rem;
   }
   
-  .overlay-panel {
-    width: 100%;
-    right: 0;
+  .card, .service-card, .news-card {
+    padding: 2rem;
   }
   
   .control-dock {
     bottom: 1rem;
     right: 1rem;
-    flex-direction: row;
-    gap: 0.5rem;
+    left: auto;
+    transform: none;
   }
   
   .control-btn {
-    width: 50px;
-    height: 50px;
+    width: 44px;
+    height: 44px;
   }
   
   .btn-icon {
-    font-size: 1.2rem;
+    font-size: 1rem;
+  }
+  
+  .settings-btn {
+    bottom: 1rem;
+    right: 1rem;
+    width: 48px;
+    height: 48px;
+  }
+  
+  .settings-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+  
+  /* Modal responsive */
+  .control-modal {
+    width: 95%;
+    max-width: none;
+    max-height: 85vh;
+  }
+  
+  .modal-header {
+    padding: 1.5rem;
+    gap: 0.75rem;
+  }
+  
+  .modal-icon {
+    width: 48px;
+    height: 48px;
+  }
+  
+  .modal-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .modal-title h2 {
+    font-size: 1.4rem;
+  }
+  
+  .modal-title p {
+    font-size: 0.85rem;
+  }
+  
+  .modal-content {
+    padding: 1.5rem;
   }
 }
 
 @media (max-width: 480px) {
   .mirror-content {
     padding: 0.5rem;
-    gap: 0.5rem;
+    gap: 1rem;
+  }
+  
+  .card, .service-card, .news-card {
+    padding: 1.5rem;
   }
   
   .control-dock {
@@ -368,170 +724,56 @@
   }
   
   .control-btn {
-    width: 45px;
-    height: 45px;
+    width: 40px;
+    height: 40px;
   }
   
   .btn-icon {
-    font-size: 1rem;
-  }
-}
-
-/* Legacy styles for backward compatibility */
-.kiosk-loading {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: #000000;
-  color: #ffffff;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-}
-
-.kiosk-loading h1 {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  font-weight: 200;
-}
-
-.kiosk-loading p {
-  font-size: 1.2rem;
-  opacity: 0.8;
-  font-weight: 300;
-}
-
-/* Page content for different views */
-.page-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  padding: 2rem;
-  text-align: center;
-}
-
-.page-content h1 {
-  font-size: 3rem;
-  margin-bottom: 2rem;
-  color: #ffffff;
-  font-weight: 200;
-}
-
-/* Simple content for testing */
-.simple-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  padding: 2rem;
-  text-align: center;
-}
-
-.simple-content h1 {
-  color: #ffffff;
-  margin-bottom: 2rem;
-  font-weight: 200;
-}
-
-.simple-content p {
-  font-size: 1.2rem;
-  margin: 1rem 0;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.simple-content button {
-  padding: 0.75rem 1.5rem;
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  font-size: 1rem;
-  cursor: pointer;
-  margin-top: 2rem;
-  transition: all 0.3s ease;
-}
-
-.simple-content button:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.4);
-}
-
-/* Full Page Assistant */
-.full-page-assistant {
-  padding: 2rem;
-  padding-top: 6rem;
-  height: 100vh;
-  box-sizing: border-box;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.full-page-assistant .ai-assistant {
-  width: 100%;
-  max-width: 800px;
-  max-height: 90vh;
-  min-height: 70vh;
-}
-
-/* ChatGPT Assistant Full Page Layout */
-.full-page-assistant {
-  padding: 20px;
-  height: calc(100vh - 60px);
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding-top: 40px;
-}
-
-.full-page-assistant .chatgpt-assistant {
-  width: 100%;
-  max-width: 800px;
-  height: 80vh;
-  max-height: 600px;
-}
-
-/* Responsive adjustments for assistant */
-@media (max-width: 768px) {
-  .full-page-assistant {
-    padding: 10px;
-    padding-top: 20px;
+    font-size: 0.9rem;
   }
   
-  .full-page-assistant .chatgpt-assistant {
-    height: 85vh;
-    max-height: none;
+  .settings-btn {
+    bottom: 0.5rem;
+    right: 0.5rem;
+    width: 44px;
+    height: 44px;
   }
-}
-
-/* Animation Classes */
-.fade-in {
-  animation: fadeIn 0.5s ease-in;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
+  
+  .settings-btn svg {
+    width: 18px;
+    height: 18px;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  
+  /* Modal responsive */
+  .control-modal {
+    width: 98%;
+    max-height: 90vh;
   }
-}
-
-.slide-in {
-  animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateX(-100%);
+  
+  .modal-header {
+    padding: 1rem;
+    gap: 0.5rem;
   }
-  to {
-    transform: translateX(0);
+  
+  .modal-icon {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .modal-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .modal-title h2 {
+    font-size: 1.2rem;
+  }
+  
+  .modal-title p {
+    font-size: 0.8rem;
+  }
+  
+  .modal-content {
+    padding: 1rem;
   }
 }

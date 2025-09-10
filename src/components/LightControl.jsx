@@ -1,17 +1,12 @@
 import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { roomsStore } from '../stores/roomsStore';
 import './LightControl.css';
 
-const LightControl = ({ data }) => {
+const LightControl = ({ data, actions }) => {
   const [animatingLights, setAnimatingLights] = useState(new Set());
-  const { user } = useAuth();
   
   const { rooms = [], loading, error } = data || {};
 
   const toggleRoomLights = async (roomId) => {
-    if (!user) return;
-    
     const room = rooms.find(r => r.id === roomId);
     if (!room) return;
 
@@ -25,7 +20,7 @@ const LightControl = ({ data }) => {
     try {
       // Update all light devices in the room
       for (const device of lightDevices) {
-        await roomsStore.updateDeviceState(roomId, device.id, newState);
+        await actions.toggleLight(roomId, device.id, newState);
       }
     } catch (error) {
       console.error('Error toggling room lights:', error);
@@ -33,13 +28,11 @@ const LightControl = ({ data }) => {
   };
 
   const toggleDevice = async (roomId, deviceId, currentState) => {
-    if (!user) return;
-    
     const newState = !currentState;
     setAnimatingLights(prev => new Set([...prev, deviceId]));
     
     try {
-      await roomsStore.updateDeviceState(roomId, deviceId, newState);
+      await actions.toggleLight(roomId, deviceId, newState);
     } catch (error) {
       console.error('Error toggling device:', error);
     } finally {
@@ -54,10 +47,8 @@ const LightControl = ({ data }) => {
   };
 
   const updateBrightness = async (roomId, deviceId, brightness) => {
-    if (!user) return;
-    
     try {
-      await roomsStore.updateDeviceBrightness(roomId, deviceId, brightness);
+      await actions.setLightBrightness(roomId, deviceId, brightness);
     } catch (error) {
       console.error('Error updating brightness:', error);
     }

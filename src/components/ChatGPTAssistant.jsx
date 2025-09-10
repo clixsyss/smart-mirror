@@ -1,10 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
-import { useAuth } from '../contexts/AuthContext'
-import { roomsStore } from '../stores/roomsStore'
 import './ChatGPTAssistant.css'
 
 const ChatGPTAssistant = ({ data, actions }) => {
-  const { user } = useAuth()
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -44,27 +41,11 @@ const ChatGPTAssistant = ({ data, actions }) => {
     setError('')
 
     try {
-      const response = await fetch('/api/chatgpt', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: inputValue.trim(),
-          rooms: data?.rooms || [],
-          userId: user?.uid
-        })
-      })
-
-      if (!response.ok) {
-        throw new Error(`ChatGPT API error: ${response.status}`)
-      }
-
-      const data = await response.json()
+      const response = await actions.sendAssistantMessage(inputValue.trim())
       
       const assistantMessage = {
         type: 'assistant',
-        content: data.response,
+        content: response,
         timestamp: new Date()
       }
 
@@ -72,13 +53,13 @@ const ChatGPTAssistant = ({ data, actions }) => {
       
       // Speak the response
       if (speechSynthesis.current) {
-        const utterance = new SpeechSynthesisUtterance(data.response)
+        const utterance = new SpeechSynthesisUtterance(response)
         utterance.rate = 0.9
         utterance.pitch = 1
         speechSynthesis.current.speak(utterance)
       }
     } catch (err) {
-      console.error('ChatGPT API error:', err)
+      console.error('Assistant error:', err)
       setError('Sorry, I encountered an error. Please try again.')
       
       const errorMessage = {
