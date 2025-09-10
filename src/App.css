@@ -396,7 +396,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: modalFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: modalFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity;
 }
 
 .control-modal {
@@ -412,7 +413,8 @@
   box-shadow: 
     0 32px 80px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  animation: modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: modalSlideIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, opacity;
   position: relative;
   display: flex;
   flex-direction: column;

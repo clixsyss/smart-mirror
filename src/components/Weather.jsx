@@ -98,7 +98,7 @@ const Weather = ({ data }) => {
     );
   }
 
-  if (error || !current) {
+  if (error && !current) {
     return (
       <div className="weather">
         <div className="weather-error">Weather unavailable</div>

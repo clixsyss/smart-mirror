@@ -48,15 +48,11 @@ class RoomsStore {
 
       const fetchedRooms = []
       for (const roomDoc of querySnapshot.docs) {
-        console.log('🔍 fetchRooms - Room document:', { id: roomDoc.id, exists: roomDoc.exists, data: roomDoc.data() });
-        
         const roomData = {
           ...roomDoc.data(),
           id: roomDoc.id, // Put ID after spread to ensure it's not overwritten
           devices: []
         }
-        
-        console.log('🔍 fetchRooms - Created roomData:', { id: roomData.id, name: roomData.name });
 
         // Fetch devices for this room
         const devicesQuery = query(
@@ -74,7 +70,6 @@ class RoomsStore {
       }
 
       this.rooms = fetchedRooms
-      console.log('🔍 fetchRooms - Final rooms with IDs:', this.rooms.map(r => ({ id: r.id, name: r.name })));
       
       // Only setup realtime listener if not already set up
       if (this.listeners.length === 0) {
@@ -104,15 +99,11 @@ class RoomsStore {
       
       const updatedRooms = []
       for (const roomDoc of roomsSnapshot.docs) {
-        console.log('🔍 Room document:', { id: roomDoc.id, exists: roomDoc.exists, data: roomDoc.data() });
-        
         const roomData = {
           ...roomDoc.data(),
           id: roomDoc.id, // Put ID after spread to ensure it's not overwritten
           devices: []
         }
-        
-        console.log('🔍 Created roomData:', { id: roomData.id, name: roomData.name });
 
         // Get devices for this room with real-time listener
         const devicesRef = collection(db, 'users', userId, 'rooms', roomDoc.id, 'devices')
@@ -145,20 +136,12 @@ class RoomsStore {
           const roomIndex = this.rooms.findIndex(r => r.id === roomDoc.id);
           if (roomIndex !== -1) {
             console.log(`🔄 Updating ${updatedDevices.length} devices in room ${this.rooms[roomIndex].name}`);
+            
+            // Update only the specific room's devices instead of recreating all rooms
             this.rooms[roomIndex].devices = updatedDevices;
             
-            // Force complete state refresh by creating new array and objects
-            this.rooms = this.rooms.map(room => ({
-              id: room.id, // Ensure ID is preserved
-              ...room,
-              devices: room.devices.map(device => ({ ...device }))
-            }));
-            
-            console.log('🔍 After device update, rooms with IDs:', this.rooms.map(r => ({ id: r.id, name: r.name })));
-            
-            // Immediate UI notification
+            // Debounced UI notification
             this.notifyListeners();
-            console.log(`✅ INSTANT SYNC COMPLETE for room ${roomDoc.id}`);
           } else {
             console.error(`❌ Room ${roomDoc.id} not found in local rooms array`);
           }
@@ -171,7 +154,6 @@ class RoomsStore {
       }
 
       this.rooms = updatedRooms
-      console.log('🔍 Initial rooms with IDs:', this.rooms.map(r => ({ id: r.id, name: r.name })));
       this.notifyListeners()
     }, (error) => {
       console.error('❌ Firebase listener error for rooms:', error)
@@ -201,10 +183,21 @@ class RoomsStore {
       realtimeDebugger.log('RoomsStore', `Updating device ${deviceId} in room ${roomId}`, updates)
       
       // Verify we have the device locally first
-      const room = this.rooms.find(r => r.id === roomId)
+      let room = this.rooms.find(r => r.id === roomId)
       if (!room) {
-        console.error('❌ Room not found:', roomId)
-        throw new Error(`Room ${roomId} not found`)
+        console.warn('⚠️ Room not found locally, attempting to fetch:', roomId)
+        // Try to fetch the room if not found locally
+        try {
+          await this.fetchRooms(userId, true) // Force refresh
+          room = this.rooms.find(r => r.id === roomId)
+          if (!room) {
+            console.error('❌ Room still not found after refresh:', roomId)
+            throw new Error(`Room ${roomId} not found`)
+          }
+        } catch (error) {
+          console.error('❌ Failed to fetch rooms:', error)
+          throw new Error(`Room ${roomId} not found`)
+        }
       }
       
       const device = room.devices.find(d => d.id === deviceId)
@@ -260,12 +253,6 @@ class RoomsStore {
   }
   
   notifyListeners() {
-    console.log(`🔔 Notifying ${this.uiListeners.length} UI listeners with ${this.rooms.length} rooms`);
-    realtimeDebugger.log('RoomsStore', `Notifying ${this.uiListeners.length} UI listeners`, { 
-      roomsCount: this.rooms.length,
-      devicesCount: this.rooms.reduce((acc, room) => acc + (room.devices?.length || 0), 0)
-    });
-    
     // Force state update by creating completely new objects
     const freshRooms = this.rooms.map(room => ({
       id: room.id, // Ensure ID is preserved
@@ -275,7 +262,6 @@ class RoomsStore {
     
     this.uiListeners.forEach((callback, index) => {
       try {
-        console.log(`📡 Calling listener ${index + 1}`);
         callback(freshRooms);
       } catch (error) {
         console.error(`❌ Error in listener ${index + 1}:`, error);
@@ -287,6 +273,12 @@ class RoomsStore {
     this.listeners.forEach(unsubscribe => unsubscribe())
     this.listeners = []
     this.uiListeners = []
+    
+    // Clear any pending notifications
+    if (this.notifyTimeout) {
+      clearTimeout(this.notifyTimeout);
+      this.notifyTimeout = null;
+    }
   }
 }
 

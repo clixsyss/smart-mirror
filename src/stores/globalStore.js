@@ -118,11 +118,23 @@ class GlobalStore {
       const apiKey = import.meta.env.VITE_OPENWEATHER_API_KEY;
       if (!apiKey || apiKey === 'your_openweather_api_key_here') {
         console.error('❌ OpenWeather API key not configured');
-        throw new Error('OpenWeather API key not configured');
+        const location = this.state.settings?.weatherLocation || 'New York, NY';
+        this.updateSection('weather', {
+          current: {
+            temperature: '--',
+            description: 'API key needed',
+            icon: '01d',
+            location: location
+          },
+          loading: false,
+          error: 'Please configure OpenWeather API key in .env file'
+        });
+        return;
       }
 
       // Get location from settings
       const location = this.state.settings?.weatherLocation || 'New York, NY';
+      console.log('🌤️ Fetching weather for location:', location);
 
       const weatherData = await cacheManager.fetchWithCache(`weather-${location}`, async () => {
         const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(location)}&appid=${apiKey}&units=metric`;
@@ -345,14 +357,9 @@ class GlobalStore {
     
     // Subscribe to roomsStore changes
     this.realtimeUnsubscribe = roomsStore.subscribe((rooms) => {
-      console.log('🔄 Real-time update received from roomsStore:', rooms.length, 'rooms');
-      console.log('🔍 Raw rooms data:', rooms.map(r => ({ id: r.id, name: r.name, hasId: !!r.id })));
-      
       // Ensure rooms have proper IDs
       const validRooms = rooms.filter(room => room.id);
       const devices = validRooms.flatMap(room => room.devices || []);
-      
-      console.log('✅ Valid rooms after filtering:', validRooms.length, 'rooms with IDs');
       
       this.updateSection('smartHome', {
         rooms: validRooms,

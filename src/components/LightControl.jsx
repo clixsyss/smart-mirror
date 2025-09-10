@@ -1,18 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import './LightControl.css';
 
 const LightControl = ({ data, actions, userId }) => {
   const [animatingLights, setAnimatingLights] = useState(new Set());
   
   const { rooms = [], loading, error } = data || {};
-  
-  // Debug: Check what rooms we're getting
-  console.log('🔍 LightControl rooms data:', rooms.map(r => ({ id: r.id, name: r.name })));
 
   const toggleRoomLights = async (roomId) => {
-    console.log('🔍 toggleRoomLights called with roomId:', roomId);
-    console.log('🔍 Available rooms:', rooms.map(r => ({ id: r.id, name: r.name })));
-    
     if (!roomId) {
       console.error('❌ Room ID is null or undefined');
       return;
@@ -41,7 +35,7 @@ const LightControl = ({ data, actions, userId }) => {
     }
   };
 
-  const toggleDevice = async (roomId, deviceId, currentState) => {
+  const toggleDevice = useCallback(async (roomId, deviceId, currentState) => {
     if (!roomId) {
       console.error('Room ID is null or undefined');
       return;
@@ -67,7 +61,7 @@ const LightControl = ({ data, actions, userId }) => {
         });
       }, 500);
     }
-  };
+  }, [actions, userId]);
 
   const updateBrightness = async (roomId, deviceId, brightness) => {
     if (!deviceId) {

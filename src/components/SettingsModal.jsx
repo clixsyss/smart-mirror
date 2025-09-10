@@ -26,6 +26,10 @@ const SettingsModal = ({ onClose, state, actions, logout, onInteraction }) => {
   const handleLocationChange = (e) => {
     const newLocation = e.target.value
     setLocationInput(newLocation)
+    // Automatically update when selection changes
+    if (newLocation.trim() && actions && actions.updateWeatherLocation) {
+      actions.updateWeatherLocation(newLocation.trim())
+    }
   }
   
   const handleLocationSubmit = () => {
@@ -133,20 +137,32 @@ const SettingsModal = ({ onClose, state, actions, logout, onInteraction }) => {
           <div className="settings-section">
             <h3>Weather Location</h3>
             <div className="input-group">
-              <input
-                type="text"
+              <select
                 value={locationInput}
                 onChange={handleLocationChange}
-                onKeyPress={(e) => e.key === 'Enter' && handleLocationSubmit()}
-                placeholder="Enter city, state or country"
-                className="location-input"
-              />
-              <button 
-                onClick={handleLocationSubmit}
-                className="location-submit-btn"
+                className="location-select"
               >
-                Update
-              </button>
+                <option value="London, UK">London, UK</option>
+                <option value="New York, NY">New York, NY</option>
+                <option value="Cairo, Egypt">Cairo, Egypt</option>
+                <option value="Dubai, UAE">Dubai, UAE</option>
+                <option value="Paris, France">Paris, France</option>
+                <option value="Tokyo, Japan">Tokyo, Japan</option>
+                <option value="Sydney, Australia">Sydney, Australia</option>
+                <option value="Toronto, Canada">Toronto, Canada</option>
+                <option value="Berlin, Germany">Berlin, Germany</option>
+                <option value="Mumbai, India">Mumbai, India</option>
+                <option value="São Paulo, Brazil">São Paulo, Brazil</option>
+                <option value="Moscow, Russia">Moscow, Russia</option>
+                <option value="Bangkok, Thailand">Bangkok, Thailand</option>
+                <option value="Singapore">Singapore</option>
+                <option value="Hong Kong">Hong Kong</option>
+                <option value="Seoul, South Korea">Seoul, South Korea</option>
+                <option value="Mexico City, Mexico">Mexico City, Mexico</option>
+                <option value="Istanbul, Turkey">Istanbul, Turkey</option>
+                <option value="Lagos, Nigeria">Lagos, Nigeria</option>
+                <option value="Buenos Aires, Argentina">Buenos Aires, Argentina</option>
+              </select>
             </div>
           </div>
 
