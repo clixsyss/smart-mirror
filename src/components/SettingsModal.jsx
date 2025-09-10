@@ -166,51 +166,6 @@ const SettingsModal = ({ onClose, state, actions, logout, onInteraction }) => {
             </div>
           </div>
 
-          {/* Device Selection */}
-          <div className="settings-section">
-            <h3>Smart Home Devices</h3>
-            
-            {/* Lights */}
-            <div className="device-category">
-              <h4>Lights</h4>
-              <div className="device-list">
-                {availableLights.map(device => (
-                  <label key={device.id} className="device-item">
-                    <input
-                      type="checkbox"
-                      checked={settings.selectedDevices.lights.includes(device.id)}
-                      onChange={() => handleDeviceToggle('lights', device.id)}
-                    />
-                    <span>{device.name}</span>
-                  </label>
-                ))}
-                {availableLights.length === 0 && (
-                  <p className="no-devices">No lights found</p>
-                )}
-              </div>
-            </div>
-
-            {/* Climate */}
-            <div className="device-category">
-              <h4>Climate Control</h4>
-              <div className="device-list">
-                {availableClimate.map(device => (
-                  <label key={device.id} className="device-item">
-                    <input
-                      type="checkbox"
-                      checked={settings.selectedDevices.climate.includes(device.id)}
-                      onChange={() => handleDeviceToggle('climate', device.id)}
-                    />
-                    <span>{device.name}</span>
-                  </label>
-                ))}
-                {availableClimate.length === 0 && (
-                  <p className="no-devices">No climate devices found</p>
-                )}
-              </div>
-            </div>
-          </div>
-
           {/* Logout */}
           <div className="settings-section">
             <button className="logout-btn" onClick={handleLogout}>
