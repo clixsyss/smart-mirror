@@ -100,7 +100,7 @@ const AnalogClock = () => {
               className="hour-marker"
               style={{
                 '--rotation': i * 30,
-                transform: `rotate(${i * 30}deg) translateY(-85px)`
+                transform: `rotate(${i * 30}deg) translateY(-100px)`
               }}
             >
               <div className="marker-line"></div>

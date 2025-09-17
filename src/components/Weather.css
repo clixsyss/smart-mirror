@@ -23,7 +23,7 @@
 }
 
 .weather-icon {
-  margin: 0 0 0.8rem;
+  margin: 0 0;
   opacity: 0.95;
   color: rgba(255, 255, 255, 0.9);
   filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
@@ -277,13 +277,9 @@
     padding: 1rem;
   }
   
-  .weather-icon {
-    margin: 0 0 0.6rem;
-  }
-  
   .weather-icon svg {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
   }
   
   .current-temp {
@@ -292,14 +288,14 @@
   }
   
   .current-description {
-    font-size: 1rem;
+    font-size: 0.8rem;
     margin: 0.2rem 0 0.6rem;
   }
   
   .current-location {
     font-size: 0.8rem;
-    margin: 0 0 0.8rem;
-    padding: 0.25rem 0.6rem;
+    margin: 0 0 0.6rem;
+    padding: 0.25rem 0.5rem;
   }
   
   .weather-details {
