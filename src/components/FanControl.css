@@ -1,5 +1,5 @@
-/* Climate Control Modal Styles */
-.climate-control {
+/* Fan Control Modal Styles */
+.fan-control {
   width: 100%;
   height: 100%;
   display: flex;
@@ -216,14 +216,6 @@
   cursor: not-allowed;
 }
 
-.temperature-display {
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.8);
-  font-weight: 500;
-  min-width: 50px;
-  text-align: center;
-}
-
 .speed-display {
   font-size: 0.9rem;
   color: rgba(255, 255, 255, 0.8);
@@ -232,7 +224,7 @@
   text-align: center;
 }
 
-.temperature-slider, .speed-slider {
+.speed-slider {
   width: 100px;
   height: 4px;
   border-radius: 2px;
@@ -243,7 +235,7 @@
   appearance: none;
 }
 
-.temperature-slider::-webkit-slider-thumb, .speed-slider::-webkit-slider-thumb {
+.speed-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: 16px;
@@ -257,12 +249,12 @@
   transition: all 0.2s ease;
 }
 
-.temperature-slider::-webkit-slider-thumb:hover, .speed-slider::-webkit-slider-thumb:hover {
+.speed-slider::-webkit-slider-thumb:hover {
   transform: scale(1.1);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-.temperature-slider::-moz-range-thumb, .speed-slider::-moz-range-thumb {
+.speed-slider::-moz-range-thumb {
   width: 16px;
   height: 16px;
   border-radius: 50%;
@@ -273,45 +265,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-.temperature-slider:disabled, .speed-slider:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.mode-selector {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.mode-btn {
-  padding: 0.5rem 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.8rem;
-  font-weight: 400;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-transform: capitalize;
-}
-
-.mode-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.3);
-  color: #ffffff;
-}
-
-.mode-btn.active {
-  background: 
-    linear-gradient(135deg, rgba(0, 123, 255, 0.3) 0%, rgba(0, 123, 255, 0.2) 100%);
-  border-color: rgba(0, 123, 255, 0.5);
-  color: #ffffff;
-  font-weight: 500;
-}
-
-.mode-btn:disabled {
+.speed-slider:disabled {
   opacity: 0.3;
   cursor: not-allowed;
 }
@@ -334,12 +288,7 @@
     justify-content: space-between;
   }
   
-  .temperature-slider {
+  .speed-slider {
     width: 80px;
-  }
-  
-  .mode-selector {
-    width: 100%;
-    justify-content: center;
   }
 }

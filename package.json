@@ -3,7 +3,14 @@
   "private": true,
   "version": "1.0.0",
   "description": "A modern, professional smart mirror interface for touch screen installations",
-  "keywords": ["smart-mirror", "react", "vite", "firebase", "touch-screen", "smart-home"],
+  "keywords": [
+    "smart-mirror",
+    "react",
+    "vite",
+    "firebase",
+    "touch-screen",
+    "smart-home"
+  ],
   "author": "Clixsys Team",
   "license": "MIT",
   "type": "module",
@@ -24,6 +31,7 @@
   },
   "dependencies": {
     "firebase": "^12.2.1",
+    "prop-types": "^15.8.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },

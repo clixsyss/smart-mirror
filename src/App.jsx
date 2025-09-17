@@ -8,7 +8,10 @@ import NewsHeadlines from './components/NewsHeadlines'
 import QuoteOfDay from './components/QuoteOfDay'
 import LightControl from './components/LightControl'
 import ClimateControl from './components/ClimateControl'
-import ChatGPTAssistant from './components/ChatGPTAssistant'
+import FanControl from './components/FanControl'
+import SmartAssistant from './components/ChatGPTAssistant'
+import ShuttersControl from './components/ShuttersControl'
+import CurtainsControl from './components/CurtainsControl'
 import ErrorBoundary from './components/ErrorBoundary'
 import SettingsModal from './components/SettingsModal'
 import './App.css'
@@ -35,6 +38,34 @@ const AssistantIcon = () => (
   </svg>
 )
 
+const ShuttersIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+    <line x1="3" y1="9" x2="21" y2="9"/>
+    <line x1="3" y1="15" x2="21" y2="15"/>
+    <line x1="9" y1="9" x2="9" y2="15"/>
+    <line x1="15" y1="9" x2="15" y2="15"/>
+  </svg>
+)
+
+const CurtainsIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 3h18v18H3z"/>
+    <path d="M12 3v18"/>
+    <path d="M3 3l9 9"/>
+    <path d="M21 3l-9 9"/>
+    <path d="M3 21l9-9"/>
+    <path d="M21 21l-9-9"/>
+  </svg>
+)
+
+const FanIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M15.2 5.2a1 1 0 0 0-1.4 0l-7.5 7.5a1 1 0 0 0 0 1.4l7.5 7.5a1 1 0 0 0 1.4-1.4L9.4 14l5.8-5.8a1 1 0 0 0 0-1.4z"/>
+    <circle cx="12" cy="12" r="2"/>
+  </svg>
+)
+
 const LogoutIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -46,12 +77,12 @@ const LogoutIcon = () => (
 const SettingsIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="3"/>
-    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
   </svg>
 )
 
 function SmartMirror() {
-  const [activePanel, setActivePanel] = useState(null) // 'lights', 'climate', 'assistant', 'settings', or null
+  const [activePanel, setActivePanel] = useState(null) // 'lights', 'climate', 'fans', 'assistant', 'settings', or null
   const [showControls, setShowControls] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [modalTimeout, setModalTimeout] = useState(null)
@@ -84,8 +115,9 @@ function SmartMirror() {
       clearTimeout(hideTimeout)
       hideTimeout = setTimeout(() => {
         setShowControls(false)
-        setActivePanel(null)
-      }, 10000) // Hide after 10 seconds
+        // Don't auto-close panels - only hide the control buttons
+        // Panels will stay open until manually closed
+      }, 10000) // Hide control buttons after 10 seconds
     }
 
     document.addEventListener('mousemove', handleUserActivity)
@@ -99,21 +131,6 @@ function SmartMirror() {
     }
   }, [])
 
-  const startModalTimeout = () => {
-    // Clear existing timeout
-    if (modalTimeout) {
-      clearTimeout(modalTimeout)
-    }
-    
-    // Set new timeout for 45 seconds
-    const timeout = setTimeout(() => {
-      closePanel()
-      closeSettings()
-    }, 45000)
-    
-    setModalTimeout(timeout)
-  }
-
   const clearModalTimeout = () => {
     if (modalTimeout) {
       clearTimeout(modalTimeout)
@@ -123,8 +140,7 @@ function SmartMirror() {
 
   const openPanel = (panel) => {
     setActivePanel(panel)
-    setShowControls(true)
-    startModalTimeout()
+    // Removed automatic timeout - panel stays open until manually closed
   }
 
   const closePanel = () => {
@@ -134,8 +150,7 @@ function SmartMirror() {
 
   const openSettings = () => {
     setShowSettings(true)
-    setShowControls(true)
-    startModalTimeout()
+    // Removed automatic timeout - settings stay open until manually closed
   }
 
   const closeSettings = () => {
@@ -144,10 +159,8 @@ function SmartMirror() {
   }
 
   const handleModalInteraction = () => {
-    // Reset the timeout when user interacts with modal
-    if (activePanel || showSettings) {
-      startModalTimeout()
-    }
+    // Modal interaction no longer resets timeout since we removed auto-close
+    // Panels stay open until manually closed
   }
 
   if (loading) {
@@ -215,7 +228,7 @@ function SmartMirror() {
       <div className="mirror-content">
         {/* Time & Date Card */}
         {state.settings?.showTime !== false && (
-          <div className="card time-card">
+          <div className={`card time-card ${state.settings?.clockType === 'analog' ? 'analog-clock-active' : ''}`}>
             <TimeDate />
           </div>
         )}
@@ -256,6 +269,16 @@ function SmartMirror() {
             </div>
           )}
 
+          {/* Fan Service Card */}
+          {state.settings?.showClimate !== false && (
+            <div className="service-card" onClick={() => openPanel('fans')}>
+              <div className="service-icon">
+                <FanIcon />
+              </div>
+              <div className="service-title">Fans</div>
+            </div>
+          )}
+
           {/* AI Assistant Service Card */}
           {state.settings?.showAssistant !== false && (
             <div className="service-card" onClick={() => openPanel('assistant')}>
@@ -263,6 +286,26 @@ function SmartMirror() {
                 <AssistantIcon />
               </div>
               <div className="service-title">Assistant</div>
+            </div>
+          )}
+
+          {/* Shutters Service Card */}
+          {state.settings?.showShutters !== false && (
+            <div className="service-card" onClick={() => openPanel('shutters')}>
+              <div className="service-icon">
+                <ShuttersIcon />
+              </div>
+              <div className="service-title">Shutters</div>
+            </div>
+          )}
+
+          {/* Curtains Service Card */}
+          {state.settings?.showCurtains !== false && (
+            <div className="service-card" onClick={() => openPanel('curtains')}>
+              <div className="service-icon">
+                <CurtainsIcon />
+              </div>
+              <div className="service-title">Curtains</div>
             </div>
           )}
         </div>
@@ -297,6 +340,18 @@ function SmartMirror() {
           >
             <div className="btn-icon">
               <ClimateIcon />
+            </div>
+          </button>
+        )}
+        
+        {state.settings?.showClimate !== false && (
+          <button 
+            className="control-btn fans-btn"
+            onClick={() => openPanel('fans')}
+            title="Fan Control"
+          >
+            <div className="btn-icon">
+              <FanIcon />
             </div>
           </button>
         )}
@@ -365,6 +420,26 @@ function SmartMirror() {
         </div>
       )}
 
+      {activePanel === 'fans' && (
+        <div className="modal-overlay" onClick={closePanel}>
+          <div className="control-modal fans-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-icon">
+                <FanIcon />
+              </div>
+              <div className="modal-title">
+                <h2>Fan Control</h2>
+                <p>Adjust fan speeds</p>
+              </div>
+              <button className="modal-close-btn" onClick={closePanel}>×</button>
+            </div>
+            <div className="modal-content" onMouseMove={handleModalInteraction} onTouchStart={handleModalInteraction}>
+              <FanControl data={state.smartHome} actions={actions} userId={user?.uid} />
+            </div>
+          </div>
+        </div>
+      )}
+
       {activePanel === 'assistant' && (
         <div className="modal-overlay" onClick={closePanel}>
           <div className="control-modal assistant-modal" onClick={(e) => e.stopPropagation()}>
@@ -373,13 +448,53 @@ function SmartMirror() {
                 <AssistantIcon />
               </div>
               <div className="modal-title">
-                <h2>AI Assistant</h2>
-                <p>Chat with your smart assistant</p>
+                <h2>Smart Assistant</h2>
+                <p>Voice-controlled smart home assistant</p>
               </div>
               <button className="modal-close-btn" onClick={closePanel}>×</button>
             </div>
             <div className="modal-content" onMouseMove={handleModalInteraction} onTouchStart={handleModalInteraction}>
-              <ChatGPTAssistant data={state.assistant} actions={actions} />
+              <SmartAssistant data={state.assistant} actions={actions} userId={user?.uid} userProfile={userProfile} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activePanel === 'shutters' && (
+        <div className="modal-overlay" onClick={closePanel}>
+          <div className="control-modal shutters-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-icon">
+                <ShuttersIcon />
+              </div>
+              <div className="modal-title">
+                <h2>Shutters Control</h2>
+                <p>Manage your smart shutters</p>
+              </div>
+              <button className="modal-close-btn" onClick={closePanel}>×</button>
+            </div>
+            <div className="modal-content" onMouseMove={handleModalInteraction} onTouchStart={handleModalInteraction}>
+              <ShuttersControl data={state.smartHome} actions={actions} userId={user?.uid} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activePanel === 'curtains' && (
+        <div className="modal-overlay" onClick={closePanel}>
+          <div className="control-modal curtains-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-icon">
+                <CurtainsIcon />
+              </div>
+              <div className="modal-title">
+                <h2>Curtains Control</h2>
+                <p>Manage your smart curtains</p>
+              </div>
+              <button className="modal-close-btn" onClick={closePanel}>×</button>
+            </div>
+            <div className="modal-content" onMouseMove={handleModalInteraction} onTouchStart={handleModalInteraction}>
+              <CurtainsControl data={state.smartHome} actions={actions} userId={user?.uid} />
             </div>
           </div>
         </div>

@@ -54,10 +54,12 @@ export const cacheManager = {
       console.warn(`Failed to fetch fresh data for ${key}, using cache:`, error);
       // Fallback to cached data
       const cachedData = this.get(key);
-      if (cachedData) {
+      if (cachedData && !this.isExpired(key, maxAge)) {
         return cachedData;
       }
-      throw new Error(`No cached data available for ${key}`);
+      // If no cached data or expired, return null instead of throwing error
+      // This allows the calling function to handle the absence of data gracefully
+      return null;
     }
   },
 

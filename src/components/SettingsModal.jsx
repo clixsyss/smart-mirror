@@ -18,11 +18,6 @@ const SettingsModal = ({ onClose, state, actions, logout, onInteraction }) => {
     }
   }
 
-  const handleDeviceToggle = (category, deviceId) => {
-    const isSelected = settings.selectedDevices?.[category]?.includes(deviceId) || false
-    actions.updateDeviceSelection(category, deviceId, !isSelected)
-  }
-
   const handleLocationChange = (e) => {
     const newLocation = e.target.value
     setLocationInput(newLocation)
@@ -31,28 +26,11 @@ const SettingsModal = ({ onClose, state, actions, logout, onInteraction }) => {
       actions.updateWeatherLocation(newLocation.trim())
     }
   }
-  
-  const handleLocationSubmit = () => {
-    if (actions && actions.updateWeatherLocation) {
-      actions.updateWeatherLocation(locationInput)
-    } else {
-      console.error('updateWeatherLocation action not available')
-    }
-  }
 
   const handleLogout = () => {
     logout()
     onClose()
   }
-
-  // Get available devices from smart home data
-  const availableLights = state.smartHome?.rooms?.flatMap(room => 
-    room.devices?.filter(device => device.type === 'light') || []
-  ) || []
-
-  const availableClimate = state.smartHome?.rooms?.flatMap(room => 
-    room.devices?.filter(device => device.type === 'climate') || []
-  ) || []
 
   return (
     <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
@@ -107,31 +85,61 @@ const SettingsModal = ({ onClose, state, actions, logout, onInteraction }) => {
 
           {/* Clock Settings */}
           <div className="settings-section">
-            <h3>Clock Format</h3>
+            <h3>Clock Type</h3>
             <div className="radio-group">
               <label className="radio-item">
                 <input
                   type="radio"
-                  name="clockFormat"
-                  value="24"
-                  checked={settings.clockFormat === '24'}
-                  onChange={(e) => actions.updateClockFormat(e.target.value)}
+                  name="clockType"
+                  value="digital"
+                  checked={settings.clockType === 'digital' || !settings.clockType}
+                  onChange={(e) => handleSettingChange('clockType', e.target.value)}
                 />
-                <span>24 Hour</span>
+                <span>Digital Clock</span>
               </label>
               
               <label className="radio-item">
                 <input
                   type="radio"
-                  name="clockFormat"
-                  value="12"
-                  checked={settings.clockFormat === '12'}
-                  onChange={(e) => actions.updateClockFormat(e.target.value)}
+                  name="clockType"
+                  value="analog"
+                  checked={settings.clockType === 'analog'}
+                  onChange={(e) => handleSettingChange('clockType', e.target.value)}
                 />
-                <span>12 Hour (AM/PM)</span>
+                <span>Analog Clock</span>
               </label>
             </div>
           </div>
+
+          {/* Clock Format - Only show for digital clock */}
+          {(settings.clockType === 'digital' || !settings.clockType) && (
+            <div className="settings-section">
+              <h3>Clock Format</h3>
+              <div className="radio-group">
+                <label className="radio-item">
+                  <input
+                    type="radio"
+                    name="clockFormat"
+                    value="24"
+                    checked={settings.clockFormat === '24'}
+                    onChange={(e) => actions.updateClockFormat(e.target.value)}
+                  />
+                  <span>24 Hour</span>
+                </label>
+                
+                <label className="radio-item">
+                  <input
+                    type="radio"
+                    name="clockFormat"
+                    value="12"
+                    checked={settings.clockFormat === '12'}
+                    onChange={(e) => actions.updateClockFormat(e.target.value)}
+                  />
+                  <span>12 Hour (AM/PM)</span>
+                </label>
+              </div>
+            </div>
+          )}
 
           {/* Location Settings */}
           <div className="settings-section">

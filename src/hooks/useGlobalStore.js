@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { globalStore } from '../stores/globalStore';
 
 export const useGlobalStore = () => {
-  const [state, setState] = useState(globalStore.getState());
+  const [state, setState] = useState(globalStore.state);
 
   useEffect(() => {
     const unsubscribe = globalStore.subscribe(setState);
@@ -15,6 +15,7 @@ export const useGlobalStore = () => {
       initialize: globalStore.initialize.bind(globalStore),
       reset: globalStore.reset.bind(globalStore),
       refreshAll: globalStore.refreshAll.bind(globalStore),
+      refreshWeather: globalStore.refreshWeather.bind(globalStore),
       fetchWeather: globalStore.fetchWeather.bind(globalStore),
       fetchNews: globalStore.fetchNews.bind(globalStore),
       fetchQuote: globalStore.fetchQuote.bind(globalStore),
@@ -37,8 +38,9 @@ export const useGlobalStore = () => {
       setClimateState: globalStore.setClimateState.bind(globalStore),
       setClimateTemperature: globalStore.setClimateTemperature.bind(globalStore),
       setClimateMode: globalStore.setClimateMode.bind(globalStore),
+      setFanSpeed: globalStore.setFanSpeed.bind(globalStore),
       // Assistant actions
-      sendAssistantMessage: globalStore.sendAssistantMessage.bind(globalStore)
+      sendAssistantMessage: (message, userId) => globalStore.sendAssistantMessage(message, userId)
     }
   };
 };

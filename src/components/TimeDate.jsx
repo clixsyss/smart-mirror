@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useGlobalStore } from '../hooks/useGlobalStore';
+import AnalogClock from './AnalogClock';
 import './TimeDate.css';
 
 const TimeDate = () => {
@@ -40,6 +41,13 @@ const TimeDate = () => {
       timeZone: timezone
     });
   };
+
+  // Check if analog clock is enabled
+  const clockType = state.settings?.clockType || 'digital';
+
+  if (clockType === 'analog') {
+    return <AnalogClock />;
+  }
 
   return (
     <div className="time-date">

@@ -1,3 +1,5 @@
+import { useState, useEffect } from 'react';
+import { useGlobalStore } from '../hooks/useGlobalStore';
 import './Weather.css';
 
 // Weather Icon Component
@@ -89,11 +91,36 @@ const WeatherIcon = ({ icon }) => {
 
 const Weather = ({ data }) => {
   const { current, loading, error } = data || {};
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState('');
+  const { actions } = useGlobalStore();
+
+  // Format last updated time
+  useEffect(() => {
+    if (current?.timestamp) {
+      const updated = new Date(current.timestamp);
+      setLastUpdated(updated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      
+      // Show updating animation briefly
+      setIsUpdating(true);
+      const timer = setTimeout(() => setIsUpdating(false), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [current?.timestamp]);
+
+  const handleRetry = async () => {
+    // Use the global store refresh method to retry fetching weather data
+    try {
+      await actions.refreshWeather();
+    } catch (err) {
+      console.error('Failed to refresh weather:', err);
+    }
+  };
 
   if (loading) {
     return (
       <div className="weather">
-        <div className="weather-loading">Loading weather...</div>
+        <div className="weather-loading">Loading weather data...</div>
       </div>
     );
   }
@@ -101,23 +128,96 @@ const Weather = ({ data }) => {
   if (error && !current) {
     return (
       <div className="weather">
-        <div className="weather-error">Weather unavailable</div>
+        <div className="weather-error">
+          Weather data unavailable
+          <div className="error-details">{error}</div>
+          <button className="retry-button" onClick={handleRetry}>Retry</button>
+        </div>
       </div>
     );
   }
 
+  // Calculate feels like temperature with fallback
+  const feelsLike = current?.feelsLike || Math.round((current?.temperature || 0) * 0.9);
+  
+  // Get wind direction from degrees
+  const getWindDirection = (degrees) => {
+    const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+    const index = Math.round(((degrees %= 360) < 0 ? degrees + 360 : degrees) / 22.5) % 16;
+    return directions[index];
+  };
+
   return (
-    <div className="weather">
+    <div className={`weather ${isUpdating ? 'weather-updating' : ''}`}>
       <div className="current-weather">
         <div className="weather-icon">
-          <WeatherIcon icon={current.icon} />
+          <WeatherIcon icon={current?.icon || '01d'} />
         </div>
-        <div className="current-temp">{current.temperature}°C</div>
-        <div className="current-description">{current.description}</div>
-        <div className="current-location">{current.location}</div>
+        <div className="current-temp">
+          {current?.temperature ? `${Math.round(current.temperature)}°C` : '--°C'}
+        </div>
+        <div className="current-description">
+          {current?.description || 'No data'}
+        </div>
+        <div className="current-location">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+          {current?.location || 'Location not set'}
+        </div>
+        
+        {current && (
+          <div className="weather-details">
+            <div className="weather-detail">
+              <span className="detail-label">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/>
+                </svg>
+                Feels Like
+              </span>
+              <span className="detail-value">{feelsLike}°C</span>
+            </div>
+            <div className="weather-detail">
+              <span className="detail-label">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                </svg>
+                Humidity
+              </span>
+              <span className="detail-value">{current.humidity}%</span>
+            </div>
+            <div className="weather-detail">
+              <span className="detail-label">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"></path>
+                </svg>
+                Wind
+              </span>
+              <span className="detail-value">
+                {current.windSpeed ? `${Math.round(current.windSpeed)} km/h ${getWindDirection(current.windDeg || 0)}` : '--'}
+              </span>
+            </div>
+          </div>
+        )}
+        
+        {lastUpdated && (
+          <div className="last-updated">
+            Updated: {lastUpdated}
+          </div>
+        )}
       </div>
     </div>
   );
+};
+
+// Default props for the Weather component
+Weather.defaultProps = {
+  data: {
+    current: null,
+    loading: false,
+    error: false
+  }
 };
 
 export default Weather;

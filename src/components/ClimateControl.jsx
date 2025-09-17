@@ -6,13 +6,53 @@ const ClimateControl = ({ data, actions, userId }) => {
   
   const { rooms = [], loading, error } = data || {};
 
+  // Debug: Log the rooms and devices data
+  React.useEffect(() => {
+    if (rooms.length > 0) {
+      console.log('ClimateControl - Rooms data:', rooms);
+      
+      // Collect all unique device types
+      const allDeviceTypes = new Set();
+      rooms.forEach(room => {
+        console.log(`Room: ${room.name}`, room.devices);
+        if (room.devices) {
+          // Log all device types to see what we're working with
+          room.devices.forEach(device => {
+            console.log(`Device: ${device.name}, Type: ${device.type}, State: ${device.state}`);
+            allDeviceTypes.add(device.type);
+          });
+          
+          // More flexible filtering for climate devices
+          const climateDevices = room.devices.filter(d => {
+            const deviceType = (d.type || '').toLowerCase();
+            return ['thermostat', 'air_conditioner', 'ac', 'aircon', 'air conditioner', 'air-conditioning'].includes(deviceType);
+          }) || [];
+          console.log(`Climate devices in ${room.name}:`, climateDevices);
+        }
+      });
+      
+      console.log('All device types in the system:', Array.from(allDeviceTypes));
+    }
+  }, [rooms]);
+
+  // More flexible function to check if a device is a climate device
+  const isClimateDevice = (device) => {
+    const deviceType = (device.type || '').toLowerCase();
+    return ['thermostat', 'air_conditioner', 'ac', 'aircon', 'air conditioner', 'air-conditioning'].includes(deviceType);
+  };
+
+  // More flexible function to check if a device has temperature control
+  const hasTemperatureControl = (device) => {
+    const deviceType = (device.type || '').toLowerCase();
+    return ['thermostat', 'air_conditioner', 'ac', 'aircon', 'air conditioner', 'air-conditioning'].includes(deviceType);
+  };
+
   const toggleRoomClimate = async (roomId) => {
     const room = rooms.find(r => r.id === roomId);
     if (!room) return;
 
-    const climateDevices = room.devices?.filter(d => 
-      ['thermostat', 'fan', 'air_conditioner'].includes(d.type)
-    ) || [];
+    // Only include thermostats and air conditioners (not fans)
+    const climateDevices = room.devices?.filter(isClimateDevice) || [];
     
     if (climateDevices.length === 0) return;
 
@@ -93,12 +133,13 @@ const ClimateControl = ({ data, actions, userId }) => {
     <div className="climate-control">
       <div className="rooms-grid">
         {rooms.map((room, roomIndex) => {
-          const climateDevices = room.devices?.filter(d => 
-            ['thermostat', 'fan', 'air_conditioner'].includes(d.type)
-          ) || [];
+          // Only include thermostats and air conditioners (not fans)
+          const climateDevices = room.devices?.filter(isClimateDevice) || [];
           
+          // Debug: Log the filtered devices
+          console.log(`Rendering room ${room.name} with ${climateDevices.length} climate devices`);
+
           const allDevicesOn = climateDevices.length > 0 && climateDevices.every(device => device.state);
-          const someDevicesOn = climateDevices.some(device => device.state);
 
           return (
             <div key={room.id || `room-${roomIndex}`} className="room-card">
@@ -127,7 +168,7 @@ const ClimateControl = ({ data, actions, userId }) => {
                       >
                       </button>
                       
-                      {device.temperature !== undefined && (
+                      {hasTemperatureControl(device) && device.temperature !== undefined && (
                         <>
                           <span className="temperature-display">{device.temperature}°C</span>
                           <input
@@ -159,6 +200,16 @@ const ClimateControl = ({ data, actions, userId }) => {
                     </div>
                   </div>
                 ))}
+                
+                {/* Debug: Show message if no climate devices found */}
+                {climateDevices.length === 0 && room.devices && room.devices.length > 0 && (
+                  <div className="no-devices-message">
+                    No climate devices found in this room. 
+                    Total devices: {room.devices.length}
+                    <br />
+                    Device types in this room: {room.devices.map(d => d.type).join(', ')}
+                  </div>
+                )}
               </div>
             </div>
           );

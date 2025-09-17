@@ -3,6 +3,7 @@ import { cacheManager } from '../utils/cacheManager';
 
 class GlobalStore {
   constructor() {
+    this.currentUserId = null;
     this.state = {
       // Weather data
       weather: {
@@ -44,7 +45,11 @@ class GlobalStore {
         isTyping: false,
         isRecording: false,
         loading: false,
-        error: null
+        error: null,
+        context: {
+          recentCommands: [],
+          lastDevice: null
+        }
       },
       
       // App state
@@ -153,15 +158,39 @@ class GlobalStore {
           temperature: Math.round(data.main.temp),
           description: data.weather[0].description,
           location: data.name,
-          icon: data.weather[0].icon
+          icon: data.weather[0].icon,
+          humidity: data.main.humidity,
+          windSpeed: data.wind.speed,
+          windDeg: data.wind.deg,
+          feelsLike: Math.round(data.main.feels_like)
         };
-      });
+      }, 15 * 60 * 1000); // 15 minutes cache
       
-      this.updateSection('weather', {
-        current: weatherData,
-        loading: false,
-        lastUpdated: Date.now()
-      });
+      // If we got data (either fresh or cached), use it
+      if (weatherData) {
+        this.updateSection('weather', {
+          current: weatherData,
+          loading: false,
+          lastUpdated: Date.now()
+        });
+      } else {
+        // No data available at all, use fallback
+        console.warn('No weather data available, using fallback');
+        this.updateSection('weather', {
+          current: {
+            temperature: 22,
+            description: 'partly cloudy',
+            location: location,
+            icon: '02d',
+            humidity: 65,
+            windSpeed: 12,
+            feelsLike: 23
+          },
+          loading: false,
+          error: 'No weather data available',
+          lastUpdated: Date.now()
+        });
+      }
     } catch (error) {
       console.error('❌ Weather fetch error:', error);
       
@@ -172,7 +201,10 @@ class GlobalStore {
           temperature: 22,
           description: 'partly cloudy',
           location: location,
-          icon: '02d'
+          icon: '02d',
+          humidity: 65,
+          windSpeed: 12,
+          feelsLike: 23
         },
         loading: false,
         error: error.message,
@@ -297,13 +329,15 @@ class GlobalStore {
     
     try {
       // Check if Firebase is properly configured
-      if (!userId) {
-        throw new Error('User ID not provided');
+      if (!userId || userId === 'default') {
+        console.warn('Invalid userId provided to fetchSmartHomeData:', userId);
+        throw new Error('Valid User ID not provided');
       }
 
+      console.log('Fetching smart home data for user:', userId);
       await roomsStore.fetchRooms(userId);
       const rooms = [...roomsStore.rooms];
-      const devices = rooms.flatMap(room => room.devices || []);
+      // const devices = rooms.flatMap(room => room.devices || []);
       
       // Ensure rooms have proper IDs
       const validRooms = rooms.filter(room => room.id);
@@ -324,7 +358,9 @@ class GlobalStore {
           name: 'Living Room',
           devices: [
             { id: 'light-1', name: 'Main Light', type: 'light', state: true, brightness: 80 },
-            { id: 'light-2', name: 'Lamp', type: 'light', state: false, brightness: 0 }
+            { id: 'light-2', name: 'Lamp', type: 'light', state: false, brightness: 0 },
+            { id: 'ac-1', name: 'Living Room AC', type: 'air_conditioner', state: false, temperature: 24, mode: 'cool', modes: ['cool', 'heat', 'auto', 'fan'] },
+            { id: 'fan-1', name: 'Ceiling Fan', type: 'fan', state: true, speed: 2, maxSpeed: 5 }
           ]
         },
         {
@@ -332,7 +368,17 @@ class GlobalStore {
           name: 'Bedroom',
           devices: [
             { id: 'light-3', name: 'Bedside Light', type: 'light', state: true, brightness: 60 },
-            { id: 'thermostat-1', name: 'Thermostat', type: 'thermostat', state: true, temperature: 22, mode: 'heat' }
+            { id: 'thermostat-1', name: 'Thermostat', type: 'thermostat', state: true, temperature: 22, mode: 'heat', modes: ['heat', 'cool', 'auto'] },
+            { id: 'ac-2', name: 'Bedroom AC', type: 'air_conditioner', state: true, temperature: 20, mode: 'cool', modes: ['cool', 'heat', 'auto', 'fan'] }
+          ]
+        },
+        {
+          id: 'kitchen',
+          name: 'Kitchen',
+          devices: [
+            { id: 'light-4', name: 'Kitchen Light', type: 'light', state: false, brightness: 70 },
+            { id: 'ac-3', name: 'Kitchen AC', type: 'air_conditioner', state: false, temperature: 25, mode: 'auto', modes: ['cool', 'heat', 'auto', 'fan'] },
+            { id: 'fan-2', name: 'Exhaust Fan', type: 'fan', state: false, speed: 1, maxSpeed: 3 }
           ]
         }
       ];
@@ -347,7 +393,7 @@ class GlobalStore {
   }
 
   // Set up real-time listener for smart home data
-  setupRealtimeListener(userId) {
+  setupRealtimeListener() {
     if (!roomsStore || !roomsStore.subscribe) {
       console.log('❌ RoomsStore or subscribe method not available');
       return;
@@ -441,7 +487,11 @@ class GlobalStore {
         messages: [],
         loading: false,
         error: null,
-        lastUpdated: null
+        lastUpdated: null,
+        context: {
+          recentCommands: [],
+          lastDevice: null
+        }
       },
       settings: {
         showTime: true,
@@ -470,6 +520,9 @@ class GlobalStore {
   // Initialize all data
   async initialize(userId) {
     if (this.state.app.isInitialized) return;
+    
+    // Store the current user ID
+    this.currentUserId = userId;
     
     // Ensure we start with clean state
     if (this.state.smartHome.rooms.length > 0) {
@@ -599,15 +652,15 @@ class GlobalStore {
     
     // Smart home: every 30 seconds
     this.refreshIntervals.set('smartHome', setInterval(() => {
-      if (this.state.smartHome.rooms.length > 0) {
-        this.fetchSmartHomeData(this.state.smartHome.rooms[0].userId || 'default');
+      if (this.state.smartHome.rooms.length > 0 && this.currentUserId) {
+        this.fetchSmartHomeData(this.currentUserId);
       }
     }, 30 * 1000));
   }
 
   // Stop background refresh
   stopBackgroundRefresh() {
-    this.refreshIntervals.forEach((interval, key) => {
+    this.refreshIntervals.forEach((interval) => {
       clearInterval(interval);
     });
     this.refreshIntervals.clear();
@@ -627,6 +680,16 @@ class GlobalStore {
     await Promise.allSettled(promises);
   }
 
+  // Manual weather refresh
+  async refreshWeather() {
+    // Clear weather cache to force fresh fetch
+    const location = this.state.settings?.weatherLocation || 'New York, NY';
+    cacheManager.clear(`weather-${location}`);
+    
+    // Fetch fresh weather data
+    await this.fetchWeather();
+  }
+
   // AI Assistant methods
   addMessage(message) {
     this.updateSection('assistant', {
@@ -643,7 +706,11 @@ class GlobalStore {
   }
 
   clearMessages() {
-    this.updateSection('assistant', { messages: [] });
+    // Clear messages but preserve context for natural conversation
+    this.updateSection('assistant', { 
+      messages: [],
+      context: this.state.assistant.context // Preserve context
+    });
   }
 
   // Settings methods
@@ -940,17 +1007,868 @@ class GlobalStore {
     }
   }
 
-  // AI Assistant methods
-  async sendAssistantMessage(message) {
+  async setFanSpeed(userId, roomId, deviceId, speed) {
     try {
-      // This would typically call a ChatGPT API
-      // For now, return a mock response
-      const response = `I received your message: "${message}". I'm a smart home assistant and can help you control your devices.`;
-      return response;
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+      if (!roomId) {
+        throw new Error('Room ID is required');
+      }
+      if (!deviceId) {
+        throw new Error('Device ID is required');
+      }
+      
+      // Update local state immediately for responsive UI
+      this.updateLocalDeviceState(roomId, deviceId, { speed });
+      
+      // Try to update in Firebase if roomsStore is available
+      if (roomsStore && roomsStore.updateDevice) {
+        await roomsStore.updateDevice(userId, roomId, deviceId, { speed });
+        // Refresh smart home data to get updated state
+        this.fetchSmartHomeData(userId);
+        }
     } catch (error) {
-      console.error('Error sending assistant message:', error);
+      console.error('Error setting fan speed:', error);
       throw error;
     }
+  }
+
+  // AI Assistant methods
+  async sendAssistantMessage(message, userId = null) {
+    try {
+      // Set typing indicator
+      this.setTyping(true);
+      
+      // Get current smart home state for context
+      const rooms = this.state.smartHome.rooms;
+      const devices = this.state.smartHome.devices;
+      
+      // Get conversation context for natural interaction
+      const conversationContext = this.getConversationContext();
+      
+      // Process the message using the enhanced system prompt
+      const response = await this.processNaturalLanguageCommand(message, rooms, devices, userId, conversationContext);
+      
+      // Clear typing indicator
+      this.setTyping(false);
+      
+      return response;
+    } catch (error) {
+      this.setTyping(false);
+      console.error('Error sending assistant message:', error);
+      return "I'm sorry, I encountered an error processing your request. Please try again.";
+    }
+  }
+
+  async processNaturalLanguageCommand(message, rooms, devices, userId, context) {
+    const systemPrompt = `
+You are a smart home assistant.
+- You control lights, fans, AC, and appliances.
+- You remember recent user requests and device states to resolve pronouns like "it", "that", or "them".
+- Always confirm ambiguous commands by asking clarifying questions.
+- Example:
+  User: "Turn it off"
+  If the last controlled device was "bedroom fan", respond:
+  {
+    "reply": "Okay, I've turned off the fan in the bedroom.",
+    "command": { "action": "turn_off", "device": "fan", "location": "bedroom" }
+  }
+- If unclear (multiple possible devices), ask:
+  {
+    "reply": "Which device would you like me to turn off? The fan or the AC?",
+    "command": null
+  }
+- Respond ONLY in JSON with two fields:
+  {
+    "reply": "natural response to user",
+    "command": { "action": "...", "device": "...", "location": "..." } | null
+  }
+- "command" must be null if the request is unclear.
+- Never invent devices or locations.
+
+Current available devices:
+${this.generateDeviceList(rooms)}
+
+Recent context:
+${context.recentCommands.map(cmd => `- ${cmd.timestamp}: ${cmd.description}`).join('\n')}
+
+Last controlled device: ${context.lastDevice ? `${context.lastDevice.name} in ${context.lastDevice.room}` : 'none'}
+`;
+
+    try {
+      // Use OpenAI API if available, otherwise use local processing
+      const openAIKey = import.meta.env.VITE_OPENAI_API_KEY;
+      
+      if (openAIKey && openAIKey !== 'your_openai_api_key_here') {
+        const response = await this.callOpenAI(systemPrompt, message);
+        return await this.executeAssistantResponse(response, rooms, userId);
+      } else {
+        // Fallback to local processing
+        console.log('OpenAI API key not configured, using local processing');
+        const response = this.processLocalCommand(message, rooms, devices, context);
+        return await this.executeAssistantResponse(response, rooms, userId);
+      }
+    } catch (error) {
+      console.error('Error processing natural language command:', error);
+      return "I'm sorry, I had trouble understanding that. Could you please rephrase your request?";
+    }
+  }
+
+  async callOpenAI(systemPrompt, userMessage) {
+    const openAIKey = import.meta.env.VITE_OPENAI_API_KEY;
+    
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${openAIKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage }
+        ],
+        temperature: 0.7,
+        max_tokens: 300
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const assistantReply = data.choices[0].message.content;
+    
+    try {
+      return JSON.parse(assistantReply);
+    } catch (error) {
+      console.error('Failed to parse OpenAI response as JSON:', assistantReply, error);
+      console.error('Failed to parse OpenAI response as JSON:', assistantReply);
+      return {
+        reply: assistantReply,
+        command: null
+      };
+    }
+  }
+
+  processLocalCommand(message, rooms, devices, context) {
+    const lowerMessage = message.toLowerCase();
+    
+    // Handle pronouns with context
+    if (this.containsPronoun(lowerMessage) && context.lastDevice) {
+      return this.handlePronounCommand(lowerMessage, context.lastDevice);
+    }
+    
+    // Device status queries
+    if (lowerMessage.includes('what devices') || lowerMessage.includes('list devices')) {
+      return {
+        reply: this.getDeviceStatus(rooms),
+        command: null
+      };
+    }
+    
+    if (lowerMessage.includes('status') || lowerMessage.includes('what\'s on')) {
+      return {
+        reply: this.getActiveDevicesStatus(rooms),
+        command: null
+      };
+    }
+    
+    // Extract command components
+    const action = this.extractAction(lowerMessage);
+    const deviceType = this.extractDeviceType(lowerMessage);
+    const location = this.extractLocation(lowerMessage, rooms);
+    const value = this.extractValue(lowerMessage);
+    
+    if (action && deviceType) {
+      return {
+        reply: this.generateConfirmationMessage(action, deviceType, location, value),
+        command: {
+          action: action,
+          device: deviceType,
+          location: location,
+          value: value
+        }
+      };
+    }
+    
+    // Default helpful response
+    return {
+      reply: "I understand you want to control your smart home, but I need more specific instructions. Try saying something like 'turn on the living room light' or 'set bedroom AC to 22 degrees'.",
+      command: null
+    };
+  }
+
+  async executeAssistantResponse(response, rooms, userId) {
+    if (!response.command) {
+      return response.reply;
+    }
+
+    const { action, device, location, value } = response.command;
+    
+    try {
+      // Find the target device
+      const targetRoom = rooms.find(r => 
+        r.name.toLowerCase().includes(location?.toLowerCase() || '')
+      );
+      
+      if (!targetRoom && location) {
+        return `I couldn't find a room called "${location}". Please check the room name and try again.`;
+      }
+      
+      const targetDevices = (targetRoom ? targetRoom.devices : rooms.flatMap(r => r.devices))
+        .filter(d => this.matchesDeviceType(d.type, device));
+      
+      if (targetDevices.length === 0) {
+        return `I couldn't find any ${device} devices${location ? ` in the ${location}` : ''}. Please check and try again.`;
+      }
+      
+      if (targetDevices.length > 1 && !location) {
+        const deviceList = targetDevices.map(d => `${d.name} in ${this.findDeviceRoom(d.id, rooms)?.name || 'unknown room'}`).join(', ');
+        return `I found multiple ${device} devices: ${deviceList}. Please specify which room you'd like me to control.`;
+      }
+      
+      // Execute the command
+      const targetDevice = targetDevices[0];
+      const targetRoomFinal = targetRoom || this.findDeviceRoom(targetDevice.id, rooms);
+      
+      await this.executeDeviceCommand(action, targetDevice, targetRoomFinal, userId, value);
+      
+      // Store command context for future reference
+      this.storeCommandContext({
+        device: targetDevice,
+        room: targetRoomFinal,
+        action: action,
+        timestamp: new Date().toLocaleTimeString()
+      });
+      
+      // Store in Firebase for persistent context
+      if (userId) {
+        await this.storeCommandInFirebase(userId, {
+          deviceId: targetDevice.id,
+          deviceName: targetDevice.name,
+          deviceType: targetDevice.type,
+          roomId: targetRoomFinal.id,
+          roomName: targetRoomFinal.name,
+          action: action,
+          timestamp: Date.now()
+        });
+      }
+      
+      return response.reply;
+    } catch (error) {
+      console.error('Error executing device command:', error);
+      return "I encountered an error while trying to control that device. Please try again.";
+    }
+  }
+
+  async executeDeviceCommand(action, device, room, userId, value) {
+    switch (action) {
+      case 'turn_on':
+        if (device.type === 'light') {
+          await this.toggleLight(userId, room.id, device.id, true);
+        } else {
+          await this.setClimateState(userId, room.id, device.id, true);
+        }
+        break;
+        
+      case 'turn_off':
+        if (device.type === 'light') {
+          await this.toggleLight(userId, room.id, device.id, false);
+        } else {
+          await this.setClimateState(userId, room.id, device.id, false);
+        }
+        break;
+        
+      case 'set_temperature':
+        if (device.type === 'air_conditioner' || device.type === 'thermostat') {
+          await this.setClimateTemperature(userId, room.id, device.id, value);
+        }
+        break;
+        
+      case 'set_speed':
+        if (device.type === 'fan') {
+          await this.setFanSpeed(userId, room.id, device.id, value);
+        }
+        break;
+        
+      case 'set_brightness':
+        if (device.type === 'light') {
+          await this.setLightBrightness(userId, room.id, device.id, value);
+        }
+        break;
+        
+      default:
+        throw new Error(`Unknown action: ${action}`);
+    }
+  }
+
+  async storeCommandInFirebase(userId, commandData) {
+    try {
+      // This would store command history in Firebase for persistent context
+      // Implementation depends on your Firebase structure
+      console.log('Storing command context in Firebase:', commandData);
+      
+      // Example implementation:
+      // const { db } = await import('../config/firebase');
+      // await addDoc(collection(db, 'users', userId, 'commandHistory'), commandData);
+    } catch (error) {
+      console.error('Error storing command in Firebase:', error);
+    }
+  }
+
+  // Context management methods
+  getConversationContext() {
+    const context = this.state.assistant.context || {
+      recentCommands: [],
+      lastDevice: null
+    };
+    
+    return context;
+  }
+  
+  storeCommandContext(commandInfo) {
+    const context = this.getConversationContext();
+    
+    // Add to recent commands (keep last 5)
+    context.recentCommands.unshift({
+      description: `${commandInfo.action} ${commandInfo.device.name} in ${commandInfo.room.name}`,
+      timestamp: commandInfo.timestamp,
+      device: commandInfo.device,
+      room: commandInfo.room
+    });
+    
+    if (context.recentCommands.length > 5) {
+      context.recentCommands = context.recentCommands.slice(0, 5);
+    }
+    
+    // Update last device
+    context.lastDevice = {
+      name: commandInfo.device.name,
+      type: commandInfo.device.type,
+      id: commandInfo.device.id,
+      room: commandInfo.room.name,
+      roomId: commandInfo.room.id
+    };
+    
+    // Store in state
+    this.updateSection('assistant', { context });
+  }
+  
+  // Helper methods for natural language processing
+  containsPronoun(message) {
+    const pronouns = ['it', 'that', 'this', 'them', 'they'];
+    return pronouns.some(pronoun => message.includes(pronoun));
+  }
+  
+  handlePronounCommand(message, lastDevice) {
+    const action = this.extractAction(message);
+    
+    if (!action) {
+      return {
+        reply: `What would you like me to do with the ${lastDevice.name} in the ${lastDevice.room}?`,
+        command: null
+      };
+    }
+    
+    return {
+      reply: `Okay, I'll ${action.replace('_', ' ')} the ${lastDevice.name} in the ${lastDevice.room}.`,
+      command: {
+        action: action,
+        device: lastDevice.type,
+        location: lastDevice.room,
+        deviceId: lastDevice.id
+      }
+    };
+  }
+  
+  extractAction(message) {
+    if (message.includes('turn on') || message.includes('switch on')) return 'turn_on';
+    if (message.includes('turn off') || message.includes('switch off')) return 'turn_off';
+    if (message.includes('set') && (message.includes('temperature') || message.includes('degrees'))) return 'set_temperature';
+    if (message.includes('set') && message.includes('speed')) return 'set_speed';
+    if (message.includes('dim') || message.includes('brightness')) return 'set_brightness';
+    return null;
+  }
+  
+  extractDeviceType(message) {
+    if (message.includes('light') || message.includes('lamp')) return 'light';
+    if (message.includes('ac') || message.includes('air condition')) return 'air_conditioner';
+    if (message.includes('fan')) return 'fan';
+    if (message.includes('thermostat')) return 'thermostat';
+    return null;
+  }
+  
+  extractLocation(message, rooms) {
+    const roomNames = rooms.map(r => r.name.toLowerCase());
+    return roomNames.find(roomName => message.toLowerCase().includes(roomName));
+  }
+  
+  extractValue(message) {
+    // Extract temperature
+    const tempMatch = message.match(/(\d+)\s*(?:degrees?|°c?|celsius)/i);
+    if (tempMatch) return parseInt(tempMatch[1]);
+    
+    // Extract speed
+    const speedMatch = message.match(/speed\s*(\d+)/i);
+    if (speedMatch) return parseInt(speedMatch[1]);
+    
+    // Extract brightness
+    const brightnessMatch = message.match(/(\d+)\s*%/);
+    if (brightnessMatch) return parseInt(brightnessMatch[1]);
+    
+    return null;
+  }
+  
+  matchesDeviceType(deviceType, requestedType) {
+    if (deviceType === requestedType) return true;
+    if (requestedType === 'light' && deviceType === 'light') return true;
+    if (requestedType === 'fan' && deviceType === 'fan') return true;
+    if (requestedType === 'air_conditioner' && (deviceType === 'air_conditioner' || deviceType === 'ac')) return true;
+    return false;
+  }
+  
+  findDeviceRoom(deviceId, rooms) {
+    for (const room of rooms) {
+      if (room.devices?.find(d => d.id === deviceId)) {
+        return room;
+      }
+    }
+    return null;
+  }
+  
+  generateDeviceList(rooms) {
+    let deviceList = '';
+    rooms.forEach(room => {
+      if (room.devices && room.devices.length > 0) {
+        deviceList += `${room.name}: ${room.devices.map(d => `${d.name} (${d.type})`).join(', ')}\n`;
+      }
+    });
+    return deviceList;
+  }
+  
+  generateConfirmationMessage(action, device, location, value) {
+    let message = `I'll ${action.replace('_', ' ')} the ${device}`;
+    if (location) message += ` in the ${location}`;
+    if (value) {
+      if (action === 'set_temperature') message += ` to ${value}°C`;
+      else if (action === 'set_speed') message += ` to speed ${value}`;
+      else if (action === 'set_brightness') message += ` to ${value}%`;
+    }
+    return message + '.';
+  }
+  
+  getDeviceStatus(rooms) {
+    let response = "Here are all your smart home devices:\n\n";
+    
+    rooms.forEach(room => {
+      response += `**${room.name}:**\n`;
+      if (room.devices && room.devices.length > 0) {
+        room.devices.forEach(device => {
+          const status = device.state ? 'ON' : 'OFF';
+          let details = '';
+          
+          if (device.type === 'light' && device.state) {
+            details = ` (${device.brightness}% brightness)`;
+          } else if (device.type === 'air_conditioner' || device.type === 'thermostat') {
+            details = ` (${device.temperature}°C, ${device.mode} mode)`;
+          } else if (device.type === 'fan' && device.state) {
+            details = ` (Speed ${device.speed})`;
+          }
+          
+          const icon = this.getDeviceIcon(device.type);
+          response += `${icon} ${device.name}: ${status}${details}\n`;
+        });
+      } else {
+        response += "No devices\n";
+      }
+      response += "\n";
+    });
+    
+    return response;
+  }
+  
+  getActiveDevicesStatus(rooms) {
+    const activeDevices = [];
+    
+    rooms.forEach(room => {
+      if (room.devices) {
+        room.devices.forEach(device => {
+          if (device.state) {
+            activeDevices.push({ ...device, roomName: room.name });
+          }
+        });
+      }
+    });
+    
+    if (activeDevices.length === 0) {
+      return "All your devices are currently turned off.";
+    }
+    
+    let response = `You have ${activeDevices.length} device${activeDevices.length > 1 ? 's' : ''} currently on:\n\n`;
+    
+    activeDevices.forEach(device => {
+      const icon = this.getDeviceIcon(device.type);
+      let details = '';
+      
+      if (device.type === 'light') {
+        details = ` at ${device.brightness}% brightness`;
+      } else if (device.type === 'air_conditioner' || device.type === 'thermostat') {
+        details = ` set to ${device.temperature}°C in ${device.mode} mode`;
+      } else if (device.type === 'fan') {
+        details = ` running at speed ${device.speed}`;
+      }
+      
+      response += `${icon} ${device.name} in ${device.roomName}${details}\n`;
+    });
+    
+    return response;
+  }
+  
+  async handleLightCommand(message, rooms, userId) {
+    const isOnCommand = message.includes('turn on') || message.includes('switch on') || message.includes(' on ');
+    const isOffCommand = message.includes('turn off') || message.includes('switch off') || message.includes(' off ');
+    const isDimCommand = message.includes('dim') || message.includes('brightness');
+    
+    // Extract room name
+    const roomName = this.extractRoomName(message, rooms);
+    const room = roomName ? rooms.find(r => r.name.toLowerCase() === roomName.toLowerCase()) : null;
+    
+    // Extract specific light name
+    const lightName = this.extractDeviceName(message, 'light');
+    
+    try {
+      if (room) {
+        const lights = room.devices.filter(d => d.type === 'light');
+        
+        if (lights.length === 0) {
+          return `There are no lights in the ${room.name}.`;
+        }
+        
+        let targetLight = null;
+        if (lightName) {
+          targetLight = lights.find(l => l.name.toLowerCase().includes(lightName.toLowerCase()));
+        }
+        
+        if (targetLight) {
+          // Control specific light
+          if (isOnCommand) {
+            await this.toggleLight(userId, room.id, targetLight.id, true);
+            return `I've turned on the ${targetLight.name} in the ${room.name}.`;
+          } else if (isOffCommand) {
+            await this.toggleLight(userId, room.id, targetLight.id, false);
+            return `I've turned off the ${targetLight.name} in the ${room.name}.`;
+          } else if (isDimCommand) {
+            const brightness = this.extractBrightness(message);
+            if (brightness !== null) {
+              await this.setLightBrightness(userId, room.id, targetLight.id, brightness);
+              return `I've set the ${targetLight.name} in the ${room.name} to ${brightness}% brightness.`;
+            }
+          }
+        } else {
+          // Control all lights in room
+          if (isOnCommand) {
+            for (const light of lights) {
+              await this.toggleLight(userId, room.id, light.id, true);
+            }
+            return `I've turned on all lights in the ${room.name}.`;
+          } else if (isOffCommand) {
+            for (const light of lights) {
+              await this.toggleLight(userId, room.id, light.id, false);
+            }
+            return `I've turned off all lights in the ${room.name}.`;
+          }
+        }
+      } else {
+        // No specific room mentioned, try to find device by name
+        if (lightName) {
+          for (const room of rooms) {
+            const light = room.devices.find(d => 
+              d.type === 'light' && d.name.toLowerCase().includes(lightName.toLowerCase())
+            );
+            if (light) {
+              if (isOnCommand) {
+                await this.toggleLight(userId, room.id, light.id, true);
+                return `I've turned on the ${light.name} in the ${room.name}.`;
+              } else if (isOffCommand) {
+                await this.toggleLight(userId, room.id, light.id, false);
+                return `I've turned off the ${light.name} in the ${room.name}.`;
+              }
+            }
+          }
+          return `I couldn't find a light named "${lightName}". Please check the name and try again.`;
+        } else {
+          // Control all lights
+          if (isOnCommand) {
+            let count = 0;
+            for (const room of rooms) {
+              for (const device of room.devices.filter(d => d.type === 'light')) {
+                await this.toggleLight(userId, room.id, device.id, true);
+                count++;
+              }
+            }
+            return `I've turned on all ${count} lights in your home.`;
+          } else if (isOffCommand) {
+            let count = 0;
+            for (const room of rooms) {
+              for (const device of room.devices.filter(d => d.type === 'light')) {
+                await this.toggleLight(userId, room.id, device.id, false);
+                count++;
+              }
+            }
+            return `I've turned off all ${count} lights in your home.`;
+          }
+        }
+      }
+      
+      return "I understand you want to control the lights, but I need more specific instructions. Try saying 'turn on the living room light' or 'turn off all lights'.";
+    } catch (error) {
+      console.error('Error handling light command:', error);
+      return "I encountered an error while trying to control the lights. Please try again.";
+    }
+  }
+  
+  async handleClimateCommand(message, rooms, userId) {
+    const roomName = this.extractRoomName(message, rooms);
+    const room = roomName ? rooms.find(r => r.name.toLowerCase() === roomName.toLowerCase()) : null;
+    
+    // Extract temperature if mentioned
+    const temperature = this.extractTemperature(message);
+    const speed = this.extractSpeed(message);
+    
+    const isOnCommand = message.includes('turn on') || message.includes('switch on') || message.includes(' on ');
+    const isOffCommand = message.includes('turn off') || message.includes('switch off') || message.includes(' off ');
+    
+    try {
+      if (room) {
+        const climateDevices = room.devices.filter(d => 
+          ['thermostat', 'fan', 'air_conditioner'].includes(d.type));
+        
+        if (climateDevices.length === 0) {
+          return `There are no climate devices in the ${room.name}.`;
+        }
+        
+        // Handle specific device types
+        if (message.includes('ac') || message.includes('air condition')) {
+          const ac = climateDevices.find(d => d.type === 'air_conditioner');
+          if (ac) {
+            if (temperature !== null) {
+              await this.setClimateTemperature(userId, room.id, ac.id, temperature);
+              return `I've set the ${room.name} AC to ${temperature}°C.`;
+            } else if (isOnCommand) {
+              await this.setClimateState(userId, room.id, ac.id, true);
+              return `I've turned on the ${room.name} AC.`;
+            } else if (isOffCommand) {
+              await this.setClimateState(userId, room.id, ac.id, false);
+              return `I've turned off the ${room.name} AC.`;
+            }
+          } else {
+            return `There's no air conditioner in the ${room.name}.`;
+          }
+        } else if (message.includes('fan')) {
+          const fan = climateDevices.find(d => d.type === 'fan');
+          if (fan) {
+            if (speed !== null) {
+              await this.setFanSpeed(userId, room.id, fan.id, speed);
+              return `I've set the ${room.name} fan to speed ${speed}.`;
+            } else if (isOnCommand) {
+              await this.setClimateState(userId, room.id, fan.id, true);
+              return `I've turned on the ${room.name} fan.`;
+            } else if (isOffCommand) {
+              await this.setClimateState(userId, room.id, fan.id, false);
+              return `I've turned off the ${room.name} fan.`;
+            }
+          } else {
+            return `There's no fan in the ${room.name}.`;
+          }
+        } else if (message.includes('thermostat')) {
+          const thermostat = climateDevices.find(d => d.type === 'thermostat');
+          if (thermostat) {
+            if (temperature !== null) {
+              await this.setClimateTemperature(userId, room.id, thermostat.id, temperature);
+              return `I've set the ${room.name} thermostat to ${temperature}°C.`;
+            }
+          } else {
+            return `There's no thermostat in the ${room.name}.`;
+          }
+        } else if (temperature !== null) {
+          // Set temperature on any available device
+          const tempDevice = climateDevices.find(d => d.type === 'air_conditioner' || d.type === 'thermostat');
+          if (tempDevice) {
+            await this.setClimateTemperature(userId, room.id, tempDevice.id, temperature);
+            return `I've set the temperature in the ${room.name} to ${temperature}°C.`;
+          }
+        } else {
+          // General climate control
+          if (isOnCommand) {
+            for (const device of climateDevices) {
+              await this.setClimateState(userId, room.id, device.id, true);
+            }
+            return `I've turned on all climate devices in the ${room.name}.`;
+          } else if (isOffCommand) {
+            for (const device of climateDevices) {
+              await this.setClimateState(userId, room.id, device.id, false);
+            }
+            return `I've turned off all climate devices in the ${room.name}.`;
+          }
+        }
+      }
+      
+      return "I understand you want to control climate devices, but I need more specific instructions. Try saying 'set bedroom AC to 22 degrees' or 'turn on living room fan'.";
+    } catch (error) {
+      console.error('Error handling climate command:', error);
+      return "I encountered an error while trying to control the climate devices. Please try again.";
+    }
+  }
+  
+  async handleRoomCommand(message, rooms, userId, roomName) {
+    const room = rooms.find(r => r.name.toLowerCase() === roomName.toLowerCase());
+    if (!room) return `I couldn't find the ${roomName}.`;
+    
+    const isOnCommand = message.includes('turn on') || message.includes('switch on');
+    const isOffCommand = message.includes('turn off') || message.includes('switch off');
+    
+    if (isOnCommand) {
+      let count = 0;
+      for (const device of room.devices) {
+        if (device.type === 'light' || device.type === 'fan' || device.type === 'air_conditioner' || device.type === 'thermostat') {
+          if (device.type === 'light') {
+            await this.toggleLight(userId, room.id, device.id, true);
+          } else {
+            await this.setClimateState(userId, room.id, device.id, true);
+          }
+          count++;
+        }
+      }
+      return `I've turned on ${count} devices in the ${room.name}.`;
+    } else if (isOffCommand) {
+      let count = 0;
+      for (const device of room.devices) {
+        if (device.type === 'light' || device.type === 'fan' || device.type === 'air_conditioner' || device.type === 'thermostat') {
+          if (device.type === 'light') {
+            await this.toggleLight(userId, room.id, device.id, false);
+          } else {
+            await this.setClimateState(userId, room.id, device.id, false);
+          }
+          count++;
+        }
+      }
+      return `I've turned off ${count} devices in the ${room.name}.`;
+    }
+    
+    // Room status
+    let response = `Here's the status of devices in the ${room.name}:\n\n`;
+    if (room.devices && room.devices.length > 0) {
+      room.devices.forEach(device => {
+        const status = device.state ? 'ON' : 'OFF';
+        const icon = this.getDeviceIcon(device.type);
+        response += `${icon} ${device.name}: ${status}\n`;
+      });
+    } else {
+      response += "No devices found.";
+    }
+    
+    return response;
+  }
+  
+  getHelpMessage() {
+    return `I'm your smart home assistant! Here's what I can help you with:\n\n` +
+           `**Lighting Control:**\n` +
+           `• "Turn on the living room light"\n` +
+           `• "Turn off all lights"\n` +
+           `• "Dim the bedroom light to 50%"\n\n` +
+           `**Climate Control:**\n` +
+           `• "Set bedroom AC to 22 degrees"\n` +
+           `• "Turn on the living room fan"\n` +
+           `• "Set fan speed to 3"\n\n` +
+           `**Device Status:**\n` +
+           `• "What devices do I have?"\n` +
+           `• "What's currently on?"\n` +
+           `• "Show me the bedroom status"\n\n` +
+           `**General:**\n` +
+           `• "What's the weather?"\n` +
+           `• Ask me anything about your smart home!`;
+  }
+  
+  getIntelligentResponse(message, rooms) {
+    // More sophisticated response based on context
+    const deviceCount = rooms.reduce((count, room) => count + (room.devices?.length || 0), 0);
+    const roomCount = rooms.length;
+    const context = this.getConversationContext();
+    
+    // Check if user is asking about conversation context
+    if (message.toLowerCase().includes('what did i last') || message.toLowerCase().includes('what was the last')) {
+      if (context.lastDevice) {
+        return `The last device you controlled was the ${context.lastDevice.name} in the ${context.lastDevice.room}.`;
+      } else {
+        return "You haven't controlled any devices yet in our conversation.";
+      }
+    }
+    
+    const responses = [
+      `I understand you're asking about "${message}". I have access to ${deviceCount} devices across ${roomCount} rooms. Would you like me to help control any specific devices?`,
+      `I'm here to help with your smart home! I can control lights, climate devices, and provide status updates. What would you like me to do?`,
+      `I didn't quite understand that command, but I'm ready to help! Try asking me to control lights, check device status, or adjust temperature settings.`,
+      `I'm your intelligent home assistant. I can help you manage ${deviceCount} smart devices. What would you like me to help you with?`
+    ];
+    
+    return responses[Math.floor(Math.random() * responses.length)];
+  }
+  
+  // Helper methods for parsing commands
+  extractRoomName(message, rooms) {
+    const roomNames = rooms.map(r => r.name.toLowerCase());
+    return roomNames.find(roomName => message.toLowerCase().includes(roomName));
+  }
+  
+  extractDeviceName(message, deviceType) {
+    // Simple extraction - could be enhanced with more sophisticated NLP
+    const words = message.toLowerCase().split(' ');
+    const deviceIndex = words.findIndex(word => word.includes(deviceType));
+    if (deviceIndex > 0) {
+      return words[deviceIndex - 1];
+    }
+    return null;
+  }
+  
+  extractTemperature(message) {
+    const tempMatch = message.match(/(\d+)\s*(?:degrees?|°c?|celsius)/i);
+    if (tempMatch) {
+      const temp = parseInt(tempMatch[1]);
+      return temp >= 16 && temp <= 30 ? temp : null;
+    }
+    return null;
+  }
+  
+  extractSpeed(message) {
+    const speedMatch = message.match(/speed\s*(\d+)/i) || message.match(/(\d+)\s*speed/i);
+    if (speedMatch) {
+      const speed = parseInt(speedMatch[1]);
+      return speed >= 1 && speed <= 5 ? speed : null;
+    }
+    return null;
+  }
+  
+  extractBrightness(message) {
+    const brightnessMatch = message.match(/(\d+)\s*%/) || message.match(/(\d+)\s*percent/i);
+    if (brightnessMatch) {
+      const brightness = parseInt(brightnessMatch[1]);
+      return brightness >= 0 && brightness <= 100 ? brightness : null;
+    }
+    return null;
+  }
+  
+  getDeviceIcon(deviceType) {
+    const icons = {
+      'light': '💡',
+      'air_conditioner': '❄️',
+      'thermostat': '🌡️',
+      'fan': '🌀'
+    };
+    return icons[deviceType] || '🔧';
   }
 
   // Get current state
@@ -967,4 +1885,33 @@ class GlobalStore {
 
 // Create singleton instance
 export const globalStore = new GlobalStore();
+
+// Create actions object with all methods
+export const globalActions = {
+  addMessage: message => globalStore.addMessage(message),
+  clearMessages: () => globalStore.clearMessages(),
+  destroy: () => globalStore.destroy(),
+  fetchQuote: () => globalStore.fetchQuote(),
+  fetchNews: () => globalStore.fetchNews(),
+  fetchSmartHomeData: userId => globalStore.fetchSmartHomeData(userId),
+  fetchWeather: () => globalStore.fetchWeather(),
+  loadSettings: () => globalStore.loadSettings(),
+  refreshAll: userId => globalStore.refreshAll(userId),
+  refreshWeather: () => globalStore.refreshWeather(),
+  sendAssistantMessage: (message, userId) => globalStore.sendAssistantMessage(message, userId),
+  setRecording: isRecording => globalStore.setRecording(isRecording),
+  setTyping: isTyping => globalStore.setTyping(isTyping),
+  setupRealtimeListener: userId => globalStore.setupRealtimeListener(userId),
+  subscribe: callback => globalStore.subscribe(callback),
+  testWeatherAPI: location => globalStore.testWeatherAPI(location),
+  toggleLight: (userId, roomId, deviceId, state) => globalStore.toggleLight(userId, roomId, deviceId, state),
+  updateClockFormat: format => globalStore.updateClockFormat(format),
+  updateDeviceSelection: (category, deviceId, selected) => globalStore.updateDeviceSelection(category, deviceId, selected),
+  updateDisplaySetting: (key, value) => globalStore.updateDisplaySetting(key, value),
+  updateLocalDeviceState: (roomId, deviceId, updates) => globalStore.updateLocalDeviceState(roomId, deviceId, updates),
+  updateSettings: updates => globalStore.updateSettings(updates),
+  updateWeatherLocation: location => globalStore.updateWeatherLocation(location),
+  updateSmartHomeData: () => globalStore.updateSmartHomeData()
+};
+
 export default globalStore;
