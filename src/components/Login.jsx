@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import VirtualKeyboard from './VirtualKeyboard'
 // import './Login.css'
 
 const Login = () => {
@@ -7,6 +8,10 @@ const Login = () => {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showKeyboard, setShowKeyboard] = useState(false)
+  const [activeInput, setActiveInput] = useState(null)
+  const emailRef = useRef(null)
+  const passwordRef = useRef(null)
   const { login } = useAuth()
 
   const handleSubmit = async (e) => {
@@ -37,6 +42,28 @@ const Login = () => {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleInputFocus = (inputType) => {
+    setActiveInput(inputType)
+    setShowKeyboard(true)
+  }
+
+  const handleKeyboardInput = (value) => {
+    if (activeInput === 'email') {
+      setEmail(value)
+    } else if (activeInput === 'password') {
+      setPassword(value)
+    }
+  }
+
+  const handleKeyboardClose = () => {
+    setShowKeyboard(false)
+    setActiveInput(null)
+  }
+
+  const getCurrentInputRef = () => {
+    return activeInput === 'email' ? emailRef : passwordRef
   }
 
   return (
@@ -79,8 +106,18 @@ const Login = () => {
             <input
               type="email"
               id="email"
+              ref={emailRef}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              onFocus={(e) => {
+                handleInputFocus('email');
+                e.target.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                e.target.style.background = 'rgba(255, 255, 255, 0.08)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+              }}
               required
               disabled={loading}
               placeholder="Enter your email"
@@ -92,15 +129,9 @@ const Login = () => {
                 fontSize: '1rem',
                 color: '#ffffff',
                 outline: 'none',
-                transition: 'all 0.3s ease'
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = 'rgba(255, 255, 255, 0.3)';
-                e.target.style.background = 'rgba(255, 255, 255, 0.08)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+                transition: 'all 0.3s ease',
+                direction: 'ltr',
+                textAlign: 'left'
               }}
             />
           </div>
@@ -110,8 +141,18 @@ const Login = () => {
             <input
               type="password"
               id="password"
+              ref={passwordRef}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              onFocus={(e) => {
+                handleInputFocus('password');
+                e.target.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                e.target.style.background = 'rgba(255, 255, 255, 0.08)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+              }}
               required
               disabled={loading}
               placeholder="Enter your password"
@@ -123,15 +164,9 @@ const Login = () => {
                 fontSize: '1rem',
                 color: '#ffffff',
                 outline: 'none',
-                transition: 'all 0.3s ease'
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = 'rgba(255, 255, 255, 0.3)';
-                e.target.style.background = 'rgba(255, 255, 255, 0.08)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+                transition: 'all 0.3s ease',
+                direction: 'ltr',
+                textAlign: 'left'
               }}
             />
           </div>
@@ -181,6 +216,15 @@ const Login = () => {
           <p style={{ margin: '0', color: 'rgba(255, 255, 255, 0.6)', fontSize: '0.85rem' }}>Access your smart home devices and mirror functions</p>
         </div>
       </div>
+
+      {/* Virtual Keyboard */}
+      <VirtualKeyboard
+        isVisible={showKeyboard}
+        onClose={handleKeyboardClose}
+        onInput={handleKeyboardInput}
+        inputRef={getCurrentInputRef()}
+        currentValue={activeInput === 'email' ? email : password}
+      />
     </div>
   )
 }
