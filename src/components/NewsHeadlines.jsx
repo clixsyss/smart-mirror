@@ -25,7 +25,7 @@ const NewsHeadlines = ({ data }) => {
 
   return (
     <div className="news-content">
-      {headlines.slice(0, 5).map((item, index) => (
+      {headlines.slice(0, 3).map((item, index) => (
         <div key={index} className="news-item">
           <div className="news-bullet"></div>
           <span className="news-text">{item.title}</span>

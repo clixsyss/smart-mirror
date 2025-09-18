@@ -6,6 +6,10 @@ import './AnimatedAnalogClock.css';
 const AnimatedAnalogClock = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const { state } = useGlobalStore();
+  
+  // Get settings for showing date and digital time
+  const showAnalogDate = state.settings?.showAnalogDate !== false; // Default to true
+  const showAnalogDigitalTime = state.settings?.showAnalogDigitalTime !== false; // Default to true
 
   // Update time frequently for smooth second hand movement
   const updateTime = useCallback(() => {
@@ -246,41 +250,47 @@ const AnimatedAnalogClock = () => {
           </motion.div>
         </motion.div>
 
-        {/* Digital Display */}
-        <motion.div
-          className="premium-digital-display"
-          initial={{ y: 30, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.8, delay: 1.2 }}
-        >
-          <motion.div 
-            className="premium-digital-time"
-            animate={{
-              textShadow: [
-                "0 0 8px rgba(255, 255, 255, 0.4)",
-                "0 0 20px rgba(255, 255, 255, 0.8)",
-                "0 0 8px rgba(255, 255, 255, 0.4)"
-              ]
-            }}
-            transition={{ duration: 2, repeat: Infinity }}
+        {/* Digital Display - Only show if enabled in settings */}
+        {(showAnalogDigitalTime || showAnalogDate) && (
+          <motion.div
+            className="premium-digital-display"
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.8, delay: 1.2 }}
           >
-            {formatTime()}
+            {showAnalogDigitalTime && (
+              <motion.div 
+                className="premium-digital-time"
+                animate={{
+                  textShadow: [
+                    "0 0 8px rgba(255, 255, 255, 0.4)",
+                    "0 0 20px rgba(255, 255, 255, 0.8)",
+                    "0 0 8px rgba(255, 255, 255, 0.4)"
+                  ]
+                }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                {formatTime()}
+              </motion.div>
+            )}
+            
+            {showAnalogDate && (
+              <motion.div 
+                className="premium-digital-date"
+                animate={{
+                  color: [
+                    "rgba(255, 255, 255, 0.8)",
+                    "rgba(220, 220, 220, 0.9)",
+                    "rgba(255, 255, 255, 0.8)"
+                  ]
+                }}
+                transition={{ duration: 4, repeat: Infinity }}
+              >
+                {formatDate()}
+              </motion.div>
+            )}
           </motion.div>
-          
-          <motion.div 
-            className="premium-digital-date"
-            animate={{
-              color: [
-                "rgba(255, 255, 255, 0.8)",
-                "rgba(220, 220, 220, 0.9)",
-                "rgba(255, 255, 255, 0.8)"
-              ]
-            }}
-            transition={{ duration: 4, repeat: Infinity }}
-          >
-            {formatDate()}
-          </motion.div>
-        </motion.div>
+        )}
       </motion.div>
     </div>
   );

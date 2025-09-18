@@ -130,9 +130,9 @@
   left: calc(50% - 1px);
   background: 
     linear-gradient(180deg, 
-      rgba(180, 180, 180, 0.95) 0%, 
-      rgba(150, 150, 150, 0.9) 50%,
-      rgba(120, 120, 120, 0.8) 100%
+      rgba(223, 66, 66, 0.95) 0%, 
+      rgba(170, 36, 36, 0.9) 50%,
+      rgba(111, 23, 23, 0.8) 100%
     );
   border-radius: 1px;
   box-shadow: 

@@ -44,18 +44,35 @@ const SettingsModal = ({ onClose, state, actions, logout, onInteraction }) => {
     handleSettingChange('timezone', newTimezone)
   }
 
-  const handleLocationUpdate = (newLocation) => {
+  const handleLocationUpdate = (newLocation, detectedTimezone = null) => {
     setLocationInput(newLocation)
+    
     // Update both weather location and timezone together
     if (actions && actions.updateWeatherLocation) {
       actions.updateWeatherLocation(newLocation)
       
-      // Also auto-detect and update timezone based on location
-      if (actions.getTimezoneFromLocation) {
-        const detectedTimezone = actions.getTimezoneFromLocation(newLocation)
-        if (detectedTimezone) {
-          setTimezone(detectedTimezone)
-          handleSettingChange('timezone', detectedTimezone)
+      // Use provided timezone or auto-detect
+      const timezoneToUse = detectedTimezone || (actions.getTimezoneFromLocation ? actions.getTimezoneFromLocation(newLocation) : null)
+      
+      if (timezoneToUse) {
+        setTimezone(timezoneToUse)
+        handleSettingChange('timezone', timezoneToUse)
+      }
+    } else {
+      console.error('updateWeatherLocation action not available')
+    }
+  }
+
+  const handleLocationDropdownChange = (e) => {
+    const selectedValue = e.target.value
+    
+    if (selectedValue) {
+      // Find the selected city data
+      for (const country of worldLocations) {
+        const city = country.cities.find(c => c.name === selectedValue)
+        if (city) {
+          handleLocationUpdate(city.name, city.timezone)
+          break
         }
       }
     }
@@ -173,20 +190,308 @@ const SettingsModal = ({ onClose, state, actions, logout, onInteraction }) => {
     localStorage.setItem('voiceSettings', JSON.stringify(newSettings))
   }
 
-  // Common timezones list
-  const commonTimezones = [
-    { value: 'America/New_York', label: 'Eastern Time (ET) - New York' },
-    { value: 'America/Chicago', label: 'Central Time (CT) - Chicago' },
-    { value: 'America/Denver', label: 'Mountain Time (MT) - Denver' },
-    { value: 'America/Los_Angeles', label: 'Pacific Time (PT) - Los Angeles' },
-    { value: 'Europe/London', label: 'GMT/BST - London' },
-    { value: 'Europe/Paris', label: 'CET/CEST - Paris' },
-    { value: 'Asia/Tokyo', label: 'JST - Tokyo' },
-    { value: 'Asia/Shanghai', label: 'CST - Shanghai' },
-    { value: 'Australia/Sydney', label: 'AEST/AEDT - Sydney' },
-    { value: 'UTC', label: 'UTC' }
+  // Comprehensive locations with cities and timezones
+  const worldLocations = [
+    // North America
+    {
+      country: 'United States',
+      cities: [
+        { name: 'New York, NY', timezone: 'America/New_York' },
+        { name: 'Los Angeles, CA', timezone: 'America/Los_Angeles' },
+        { name: 'Chicago, IL', timezone: 'America/Chicago' },
+        { name: 'Houston, TX', timezone: 'America/Chicago' },
+        { name: 'Miami, FL', timezone: 'America/New_York' },
+        { name: 'Seattle, WA', timezone: 'America/Los_Angeles' },
+        { name: 'Denver, CO', timezone: 'America/Denver' },
+        { name: 'Phoenix, AZ', timezone: 'America/Phoenix' },
+        { name: 'Las Vegas, NV', timezone: 'America/Los_Angeles' },
+        { name: 'Boston, MA', timezone: 'America/New_York' }
+      ]
+    },
+    {
+      country: 'Canada',
+      cities: [
+        { name: 'Toronto, ON', timezone: 'America/Toronto' },
+        { name: 'Vancouver, BC', timezone: 'America/Vancouver' },
+        { name: 'Montreal, QC', timezone: 'America/Montreal' },
+        { name: 'Calgary, AB', timezone: 'America/Edmonton' },
+        { name: 'Ottawa, ON', timezone: 'America/Toronto' }
+      ]
+    },
+    // Europe
+    {
+      country: 'United Kingdom',
+      cities: [
+        { name: 'London, England', timezone: 'Europe/London' },
+        { name: 'Manchester, England', timezone: 'Europe/London' },
+        { name: 'Edinburgh, Scotland', timezone: 'Europe/London' },
+        { name: 'Birmingham, England', timezone: 'Europe/London' }
+      ]
+    },
+    {
+      country: 'Germany',
+      cities: [
+        { name: 'Berlin, Germany', timezone: 'Europe/Berlin' },
+        { name: 'Munich, Germany', timezone: 'Europe/Berlin' },
+        { name: 'Hamburg, Germany', timezone: 'Europe/Berlin' },
+        { name: 'Frankfurt, Germany', timezone: 'Europe/Berlin' }
+      ]
+    },
+    {
+      country: 'France',
+      cities: [
+        { name: 'Paris, France', timezone: 'Europe/Paris' },
+        { name: 'Lyon, France', timezone: 'Europe/Paris' },
+        { name: 'Marseille, France', timezone: 'Europe/Paris' },
+        { name: 'Nice, France', timezone: 'Europe/Paris' }
+      ]
+    },
+    {
+      country: 'Italy',
+      cities: [
+        { name: 'Rome, Italy', timezone: 'Europe/Rome' },
+        { name: 'Milan, Italy', timezone: 'Europe/Rome' },
+        { name: 'Naples, Italy', timezone: 'Europe/Rome' },
+        { name: 'Venice, Italy', timezone: 'Europe/Rome' }
+      ]
+    },
+    {
+      country: 'Spain',
+      cities: [
+        { name: 'Madrid, Spain', timezone: 'Europe/Madrid' },
+        { name: 'Barcelona, Spain', timezone: 'Europe/Madrid' },
+        { name: 'Seville, Spain', timezone: 'Europe/Madrid' },
+        { name: 'Valencia, Spain', timezone: 'Europe/Madrid' }
+      ]
+    },
+    // Asia
+    {
+      country: 'Japan',
+      cities: [
+        { name: 'Tokyo, Japan', timezone: 'Asia/Tokyo' },
+        { name: 'Osaka, Japan', timezone: 'Asia/Tokyo' },
+        { name: 'Kyoto, Japan', timezone: 'Asia/Tokyo' },
+        { name: 'Yokohama, Japan', timezone: 'Asia/Tokyo' }
+      ]
+    },
+    {
+      country: 'China',
+      cities: [
+        { name: 'Beijing, China', timezone: 'Asia/Shanghai' },
+        { name: 'Shanghai, China', timezone: 'Asia/Shanghai' },
+        { name: 'Guangzhou, China', timezone: 'Asia/Shanghai' },
+        { name: 'Shenzhen, China', timezone: 'Asia/Shanghai' }
+      ]
+    },
+    {
+      country: 'India',
+      cities: [
+        { name: 'Mumbai, India', timezone: 'Asia/Kolkata' },
+        { name: 'Delhi, India', timezone: 'Asia/Kolkata' },
+        { name: 'Bangalore, India', timezone: 'Asia/Kolkata' },
+        { name: 'Chennai, India', timezone: 'Asia/Kolkata' }
+      ]
+    },
+    {
+      country: 'South Korea',
+      cities: [
+        { name: 'Seoul, South Korea', timezone: 'Asia/Seoul' },
+        { name: 'Busan, South Korea', timezone: 'Asia/Seoul' },
+        { name: 'Incheon, South Korea', timezone: 'Asia/Seoul' }
+      ]
+    },
+    // Arab Countries & Middle East
+    {
+      country: 'United Arab Emirates',
+      cities: [
+        { name: 'Dubai, UAE', timezone: 'Asia/Dubai' },
+        { name: 'Abu Dhabi, UAE', timezone: 'Asia/Dubai' },
+        { name: 'Sharjah, UAE', timezone: 'Asia/Dubai' },
+        { name: 'Ajman, UAE', timezone: 'Asia/Dubai' }
+      ]
+    },
+    {
+      country: 'Saudi Arabia',
+      cities: [
+        { name: 'Riyadh, Saudi Arabia', timezone: 'Asia/Riyadh' },
+        { name: 'Jeddah, Saudi Arabia', timezone: 'Asia/Riyadh' },
+        { name: 'Mecca, Saudi Arabia', timezone: 'Asia/Riyadh' },
+        { name: 'Medina, Saudi Arabia', timezone: 'Asia/Riyadh' },
+        { name: 'Dammam, Saudi Arabia', timezone: 'Asia/Riyadh' },
+        { name: 'Khobar, Saudi Arabia', timezone: 'Asia/Riyadh' }
+      ]
+    },
+    {
+      country: 'Egypt',
+      cities: [
+        { name: 'Cairo, Egypt', timezone: 'Africa/Cairo' },
+        { name: 'Alexandria, Egypt', timezone: 'Africa/Cairo' },
+        { name: 'Giza, Egypt', timezone: 'Africa/Cairo' },
+        { name: 'Sharm El Sheikh, Egypt', timezone: 'Africa/Cairo' },
+        { name: 'Hurghada, Egypt', timezone: 'Africa/Cairo' },
+        { name: 'Luxor, Egypt', timezone: 'Africa/Cairo' }
+      ]
+    },
+    {
+      country: 'Qatar',
+      cities: [
+        { name: 'Doha, Qatar', timezone: 'Asia/Qatar' },
+        { name: 'Al Rayyan, Qatar', timezone: 'Asia/Qatar' },
+        { name: 'Al Wakrah, Qatar', timezone: 'Asia/Qatar' }
+      ]
+    },
+    {
+      country: 'Kuwait',
+      cities: [
+        { name: 'Kuwait City, Kuwait', timezone: 'Asia/Kuwait' },
+        { name: 'Hawalli, Kuwait', timezone: 'Asia/Kuwait' },
+        { name: 'Salmiya, Kuwait', timezone: 'Asia/Kuwait' }
+      ]
+    },
+    {
+      country: 'Bahrain',
+      cities: [
+        { name: 'Manama, Bahrain', timezone: 'Asia/Bahrain' },
+        { name: 'Riffa, Bahrain', timezone: 'Asia/Bahrain' },
+        { name: 'Muharraq, Bahrain', timezone: 'Asia/Bahrain' }
+      ]
+    },
+    {
+      country: 'Oman',
+      cities: [
+        { name: 'Muscat, Oman', timezone: 'Asia/Muscat' },
+        { name: 'Salalah, Oman', timezone: 'Asia/Muscat' },
+        { name: 'Nizwa, Oman', timezone: 'Asia/Muscat' }
+      ]
+    },
+    {
+      country: 'Jordan',
+      cities: [
+        { name: 'Amman, Jordan', timezone: 'Asia/Amman' },
+        { name: 'Irbid, Jordan', timezone: 'Asia/Amman' },
+        { name: 'Zarqa, Jordan', timezone: 'Asia/Amman' },
+        { name: 'Aqaba, Jordan', timezone: 'Asia/Amman' }
+      ]
+    },
+    {
+      country: 'Lebanon',
+      cities: [
+        { name: 'Beirut, Lebanon', timezone: 'Asia/Beirut' },
+        { name: 'Tripoli, Lebanon', timezone: 'Asia/Beirut' },
+        { name: 'Sidon, Lebanon', timezone: 'Asia/Beirut' }
+      ]
+    },
+    {
+      country: 'Syria',
+      cities: [
+        { name: 'Damascus, Syria', timezone: 'Asia/Damascus' },
+        { name: 'Aleppo, Syria', timezone: 'Asia/Damascus' },
+        { name: 'Homs, Syria', timezone: 'Asia/Damascus' }
+      ]
+    },
+    {
+      country: 'Iraq',
+      cities: [
+        { name: 'Baghdad, Iraq', timezone: 'Asia/Baghdad' },
+        { name: 'Basra, Iraq', timezone: 'Asia/Baghdad' },
+        { name: 'Erbil, Iraq', timezone: 'Asia/Baghdad' },
+        { name: 'Mosul, Iraq', timezone: 'Asia/Baghdad' }
+      ]
+    },
+    {
+      country: 'Morocco',
+      cities: [
+        { name: 'Casablanca, Morocco', timezone: 'Africa/Casablanca' },
+        { name: 'Rabat, Morocco', timezone: 'Africa/Casablanca' },
+        { name: 'Marrakech, Morocco', timezone: 'Africa/Casablanca' },
+        { name: 'Fes, Morocco', timezone: 'Africa/Casablanca' }
+      ]
+    },
+    {
+      country: 'Tunisia',
+      cities: [
+        { name: 'Tunis, Tunisia', timezone: 'Africa/Tunis' },
+        { name: 'Sfax, Tunisia', timezone: 'Africa/Tunis' },
+        { name: 'Sousse, Tunisia', timezone: 'Africa/Tunis' }
+      ]
+    },
+    {
+      country: 'Algeria',
+      cities: [
+        { name: 'Algiers, Algeria', timezone: 'Africa/Algiers' },
+        { name: 'Oran, Algeria', timezone: 'Africa/Algiers' },
+        { name: 'Constantine, Algeria', timezone: 'Africa/Algiers' }
+      ]
+    },
+    {
+      country: 'Libya',
+      cities: [
+        { name: 'Tripoli, Libya', timezone: 'Africa/Tripoli' },
+        { name: 'Benghazi, Libya', timezone: 'Africa/Tripoli' }
+      ]
+    },
+    {
+      country: 'Sudan',
+      cities: [
+        { name: 'Khartoum, Sudan', timezone: 'Africa/Khartoum' },
+        { name: 'Omdurman, Sudan', timezone: 'Africa/Khartoum' }
+      ]
+    },
+    {
+      country: 'Yemen',
+      cities: [
+        { name: 'Sanaa, Yemen', timezone: 'Asia/Aden' },
+        { name: 'Aden, Yemen', timezone: 'Asia/Aden' }
+      ]
+    },
+    {
+      country: 'Palestine',
+      cities: [
+        { name: 'Jerusalem, Palestine', timezone: 'Asia/Jerusalem' },
+        { name: 'Gaza, Palestine', timezone: 'Asia/Gaza' },
+        { name: 'Ramallah, Palestine', timezone: 'Asia/Jerusalem' }
+      ]
+    },
+    {
+      country: 'South Africa',
+      cities: [
+        { name: 'Cape Town, South Africa', timezone: 'Africa/Johannesburg' },
+        { name: 'Johannesburg, South Africa', timezone: 'Africa/Johannesburg' }
+      ]
+    },
+    // Oceania
+    {
+      country: 'Australia',
+      cities: [
+        { name: 'Sydney, Australia', timezone: 'Australia/Sydney' },
+        { name: 'Melbourne, Australia', timezone: 'Australia/Melbourne' },
+        { name: 'Brisbane, Australia', timezone: 'Australia/Brisbane' },
+        { name: 'Perth, Australia', timezone: 'Australia/Perth' }
+      ]
+    },
+    {
+      country: 'New Zealand',
+      cities: [
+        { name: 'Auckland, New Zealand', timezone: 'Pacific/Auckland' },
+        { name: 'Wellington, New Zealand', timezone: 'Pacific/Auckland' }
+      ]
+    },
+    // South America
+    {
+      country: 'Brazil',
+      cities: [
+        { name: 'São Paulo, Brazil', timezone: 'America/Sao_Paulo' },
+        { name: 'Rio de Janeiro, Brazil', timezone: 'America/Sao_Paulo' },
+        { name: 'Brasília, Brazil', timezone: 'America/Sao_Paulo' }
+      ]
+    },
+    {
+      country: 'Argentina',
+      cities: [
+        { name: 'Buenos Aires, Argentina', timezone: 'America/Argentina/Buenos_Aires' }
+      ]
+    }
   ]
-
   return (
     <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
       <div className="settings-content" onMouseMove={onInteraction} onTouchStart={onInteraction}>
@@ -310,68 +615,6 @@ const SettingsModal = ({ onClose, state, actions, logout, onInteraction }) => {
                 <span>12 Hour (AM/PM)</span>
               </label>
             </div>
-            
-            {/* Timezone Override */}
-            <div className="timezone-override">
-              <h4>Timezone Override (Optional)</h4>
-              <select
-                value={timezone}
-                onChange={handleTimezoneChange}
-                className="location-select"
-              >
-                <option value="">Auto-detect from location above</option>
-                {commonTimezones.map((tz) => (
-                  <option key={tz.value} value={tz.value}>
-                    {tz.label}
-                  </option>
-                ))}
-              </select>
-              <div className="location-hint">
-                Leave blank to auto-detect timezone from your location
-              </div>
-            </div>
-          </div>
-
-          {/* Daylight Saving Time Settings */}
-          <div className="settings-section">
-            <h3>Daylight Saving Time</h3>
-            <div className="radio-group">
-              <label className="radio-item">
-                <input
-                  type="radio"
-                  name="dstAdjustment"
-                  value="auto"
-                  checked={dstAdjustment === 'auto'}
-                  onChange={handleDstChange}
-                />
-                <span>Auto Detect</span>
-              </label>
-              
-              <label className="radio-item">
-                <input
-                  type="radio"
-                  name="dstAdjustment"
-                  value="summer"
-                  checked={dstAdjustment === 'summer'}
-                  onChange={handleDstChange}
-                />
-                <span>Summer Time (DST)</span>
-              </label>
-              
-              <label className="radio-item">
-                <input
-                  type="radio"
-                  name="dstAdjustment"
-                  value="winter"
-                  checked={dstAdjustment === 'winter'}
-                  onChange={handleDstChange}
-                />
-                <span>Winter Time (Standard)</span>
-              </label>
-            </div>
-            <div className="location-hint">
-              Choose how daylight saving time should be handled
-            </div>
           </div>
 
           {/* Date/Time Settings - Only show for analog clock */}
@@ -491,50 +734,86 @@ const SettingsModal = ({ onClose, state, actions, logout, onInteraction }) => {
           <div className="settings-section">
             <h3>Location & Time Zone</h3>
             <div className="input-group">
-              <input
-                type="text"
+              <select
                 value={locationInput}
-                onChange={handleLocationChange}
-                onKeyPress={handleLocationKeyPress}
-                placeholder="Enter your city and country (e.g., London, UK)"
-                className="location-input"
+                onChange={handleLocationDropdownChange}
+                className="location-select"
                 disabled={isDetectingLocation}
-              />
+              >
+                <option value="">Select your location...</option>
+                {worldLocations.map((country) => (
+                  <optgroup key={country.country} label={country.country}>
+                    {country.cities.map((city) => (
+                      <option key={city.name} value={city.name}>
+                        {city.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+
               <div className="location-buttons-row">
-                <button 
-                  className="update-location-btn" 
-                  onClick={updateWeatherLocation}
-                  disabled={isDetectingLocation}
-                >
-                  Update Location & Time
-                </button>
                 <button 
                   className="detect-location-btn" 
                   onClick={detectUserLocation}
                   disabled={isDetectingLocation}
                 >
-                  {isDetectingLocation ? 'Detecting...' : 'Detect My Location'}
+                  {isDetectingLocation ? 'Detecting...' : 'Use My Current Location'}
                 </button>
               </div>
+
               <div className="location-hint">
-                This location is used for both weather data and timezone detection
+                Select your city to automatically set weather data and timezone
               </div>
+
+              {locationInput && (
+                <div className="current-location">
+                  <strong>Current:</strong> {locationInput}
+                  {timezone && <span className="timezone-info"> ({timezone})</span>}
+                </div>
+              )}
             </div>
-            
-            {/* Popular locations as quick select options */}
-            <div className="quick-locations">
-              <h4>Quick Select:</h4>
-              <div className="location-buttons">
-                {['London, UK', 'New York, NY', 'Paris, France', 'Tokyo, Japan', 'Sydney, Australia'].map((location) => (
-                  <button
-                    key={location}
-                    className="location-btn"
-                    onClick={() => handleLocationUpdate(location)}
-                  >
-                    {location}
-                  </button>
-                ))}
+          </div>
+
+          {/* Daylight Saving Time Settings */}
+          <div className="settings-section">
+            <h3>Daylight Saving Time</h3>
+            <div className="radio-group">
+              <label className="radio-item">
+                <input
+                  type="radio"
+                  name="dstAdjustment"
+                  value="auto"
+                  checked={dstAdjustment === 'auto'}
+                  onChange={handleDstChange}
+                />
+                <span>Auto Detect</span>
+              </label>
+
+              <label className="radio-item">
+                <input
+                  type="radio"
+                  name="dstAdjustment"
+                  value="summer"
+                  checked={dstAdjustment === 'summer'}
+                  onChange={handleDstChange}
+                />
+                <span>Summer Time (DST)</span>
+              </label>
+
+              <label className="radio-item">
+                <input
+                  type="radio"
+                  name="dstAdjustment"
+                  value="winter"
+                  checked={dstAdjustment === 'winter'}
+                  onChange={handleDstChange}
+                />
+                <span>Winter Time (Standard)</span>
+              </label>
               </div>
+            <div className="location-hint">
+              Choose how daylight saving time should be handled
             </div>
           </div>
 

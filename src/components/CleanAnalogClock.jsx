@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useGlobalStore } from '../hooks/useGlobalStore';
 import './CleanAnalogClock.css';
 
 const CleanAnalogClock = () => {
+  const { state } = useGlobalStore();
   const [time, setTime] = useState(new Date());
+  
+  // Get settings for showing date and digital time
+  const showAnalogDate = state.settings?.showAnalogDate !== false; // Default to true
+  const showAnalogDigitalTime = state.settings?.showAnalogDigitalTime !== false; // Default to true
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -92,16 +98,22 @@ const CleanAnalogClock = () => {
           <div className="clean-center-dot" />
         </div>
 
-        {/* Digital Display */}
-        <motion.div
-          className="clean-digital-display"
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.6, delay: 1 }}
-        >
-          <div className="clean-digital-time">{formatTime()}</div>
-          <div className="clean-digital-date">{formatDate()}</div>
-        </motion.div>
+        {/* Digital Display - Only show if enabled in settings */}
+        {(showAnalogDigitalTime || showAnalogDate) && (
+          <motion.div
+            className="clean-digital-display"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6, delay: 1 }}
+          >
+            {showAnalogDigitalTime && (
+              <div className="clean-digital-time">{formatTime()}</div>
+            )}
+            {showAnalogDate && (
+              <div className="clean-digital-date">{formatDate()}</div>
+            )}
+          </motion.div>
+        )}
       </motion.div>
     </div>
   );

@@ -7,6 +7,10 @@ const CanvasAnalogClock = () => {
   const animationRef = useRef(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const { state } = useGlobalStore();
+  
+  // Get settings for showing date and digital time
+  const showAnalogDate = state.settings?.showAnalogDate !== false; // Default to true
+  const showAnalogDigitalTime = state.settings?.showAnalogDigitalTime !== false; // Default to true
 
   // Clock configuration - easily customizable
   const clockConfig = {
@@ -264,10 +268,17 @@ const CanvasAnalogClock = () => {
         className="clock-canvas"
       />
       
-      <div className="canvas-digital-display">
-        <div className="canvas-digital-time">{formatTime()}</div>
-        <div className="canvas-digital-date">{formatDate()}</div>
-      </div>
+      {/* Digital Time Display - Only show if enabled in settings */}
+      {(showAnalogDigitalTime || showAnalogDate) && (
+        <div className="canvas-digital-display">
+          {showAnalogDigitalTime && (
+            <div className="canvas-digital-time">{formatTime()}</div>
+          )}
+          {showAnalogDate && (
+            <div className="canvas-digital-date">{formatDate()}</div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

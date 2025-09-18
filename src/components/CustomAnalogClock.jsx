@@ -6,6 +6,10 @@ const CustomAnalogClock = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const { state, actions } = useGlobalStore();
   const [isMounted, setIsMounted] = useState(true);
+  
+  // Get settings for showing date and digital time
+  const showAnalogDate = state.settings?.showAnalogDate !== false; // Default to true
+  const showAnalogDigitalTime = state.settings?.showAnalogDigitalTime !== false; // Default to true
 
   // Update time every second
   const updateTime = useCallback(() => {
@@ -235,11 +239,17 @@ const CustomAnalogClock = () => {
         />
       </svg>
 
-      {/* Digital Time Display */}
-      <div className="digital-display">
-        <div className="digital-time">{formatTime()}</div>
-        <div className="digital-date">{formatDate()}</div>
-      </div>
+      {/* Digital Time Display - Only show if enabled in settings */}
+      {(showAnalogDigitalTime || showAnalogDate) && (
+        <div className="digital-display">
+          {showAnalogDigitalTime && (
+            <div className="digital-time">{formatTime()}</div>
+          )}
+          {showAnalogDate && (
+            <div className="digital-date">{formatDate()}</div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

@@ -6,6 +6,10 @@ const AnalogClock = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const { state, actions } = useGlobalStore();
   const [isMounted, setIsMounted] = useState(true);
+  
+  // Get settings for showing date and digital time
+  const showAnalogDate = state.settings?.showAnalogDate !== false; // Default to true
+  const showAnalogDigitalTime = state.settings?.showAnalogDigitalTime !== false; // Default to true
 
   // Memoize the time update function
   const updateTime = useCallback(() => {
