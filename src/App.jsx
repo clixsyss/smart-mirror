@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { useGlobalStore } from './hooks/useGlobalStore'
+import useConnectivity from './hooks/useConnectivity'
 import Login from './components/Login'
 import TimeDate from './components/TimeDate'
 import Weather from './components/Weather'
@@ -14,6 +15,7 @@ import ShuttersControl from './components/ShuttersControl'
 import CurtainsControl from './components/CurtainsControl'
 import ErrorBoundary from './components/ErrorBoundary'
 import SettingsModal from './components/SettingsModal'
+import OfflineMode from './components/OfflineMode'
 import './App.css'
 
 // Modern Icon Components
@@ -88,6 +90,7 @@ function SmartMirror() {
   const [modalTimeout, setModalTimeout] = useState(null)
   const { user, userProfile, loading, logout } = useAuth()
   const { state, actions } = useGlobalStore()
+  const connectivity = useConnectivity()
 
   useEffect(() => {
     if (user && !state.app.isInitialized) {
@@ -161,6 +164,11 @@ function SmartMirror() {
   const handleModalInteraction = () => {
     // Modal interaction no longer resets timeout since we removed auto-close
     // Panels stay open until manually closed
+  }
+
+  // Show offline mode if no internet connection
+  if (!connectivity.isOnline) {
+    return <OfflineMode connectionStatus={connectivity.getConnectionStatus()} />
   }
 
   if (loading) {
@@ -519,6 +527,16 @@ function SmartMirror() {
             logout={logout}
             onInteraction={handleModalInteraction}
           />
+        </div>
+      )}
+
+      {/* Connection Status Indicator */}
+      {connectivity.isConnecting && (
+        <div className="connection-status">
+          <div className="connection-indicator">
+            <div className="connection-spinner"></div>
+            <span>Reconnecting...</span>
+          </div>
         </div>
       )}
 
