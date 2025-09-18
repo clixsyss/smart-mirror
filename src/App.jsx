@@ -16,6 +16,7 @@ import CurtainsControl from './components/CurtainsControl'
 import ErrorBoundary from './components/ErrorBoundary'
 import SettingsModal from './components/SettingsModal'
 import OfflineMode from './components/OfflineMode'
+import logoImage from './assets/logo.png'
 import './App.css'
 
 // Modern Icon Components
@@ -77,9 +78,9 @@ const LogoutIcon = () => (
 )
 
 const SettingsIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
     <circle cx="12" cy="12" r="3"/>
-    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
   </svg>
 )
 
@@ -87,6 +88,7 @@ function SmartMirror() {
   const [activePanel, setActivePanel] = useState(null) // 'lights', 'climate', 'fans', 'assistant', 'settings', or null
   const [showControls, setShowControls] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [showServices, setShowServices] = useState(false)
   const [modalTimeout, setModalTimeout] = useState(null)
   const { user, userProfile, loading, logout } = useAuth()
   const { state, actions } = useGlobalStore()
@@ -161,6 +163,14 @@ function SmartMirror() {
     clearModalTimeout()
   }
 
+  const openServices = () => {
+    setShowServices(true)
+  }
+
+  const closeServices = () => {
+    setShowServices(false)
+  }
+
   const handleModalInteraction = () => {
     // Modal interaction no longer resets timeout since we removed auto-close
     // Panels stay open until manually closed
@@ -202,24 +212,13 @@ function SmartMirror() {
           <div className="card quote-card">
             <QuoteOfDay data={state.quote} settings={state.settings} />
           </div>
-          <div className="services-grid">
-            <div className="service-card" onClick={() => openPanel('lights')}>
-              <div className="service-icon">
-                <LightIcon />
-              </div>
-              <div className="service-title">Lights</div>
-            </div>
-            <div className="service-card" onClick={() => openPanel('climate')}>
-              <div className="service-icon">
-                <ClimateIcon />
-              </div>
-              <div className="service-title">Climate</div>
-            </div>
-            <div className="service-card" onClick={() => openPanel('assistant')}>
-              <div className="service-icon">
-                <AssistantIcon />
-              </div>
-              <div className="service-title">Assistant</div>
+          <div className="company-logo-section" onClick={openServices}>
+            <div className="company-logo-container">
+              <img 
+                src={logoImage} 
+                alt="Clixsys Logo" 
+                className="company-logo"
+              />
             </div>
           </div>
           <div className="news-card">
@@ -255,67 +254,15 @@ function SmartMirror() {
           </div>
         )}
 
-        {/* Services Grid */}
-        <div className="services-grid">
-          {/* Lights Service Card */}
-          {state.settings?.showLights !== false && (
-            <div className="service-card" onClick={() => openPanel('lights')}>
-              <div className="service-icon">
-                <LightIcon />
-              </div>
-              <div className="service-title">Lights</div>
-            </div>
-          )}
-
-          {/* Climate Service Card */}
-          {state.settings?.showClimate !== false && (
-            <div className="service-card" onClick={() => openPanel('climate')}>
-              <div className="service-icon">
-                <ClimateIcon />
-              </div>
-              <div className="service-title">Climate</div>
-            </div>
-          )}
-
-          {/* Fan Service Card */}
-          {state.settings?.showClimate !== false && (
-            <div className="service-card" onClick={() => openPanel('fans')}>
-              <div className="service-icon">
-                <FanIcon />
-              </div>
-              <div className="service-title">Fans</div>
-            </div>
-          )}
-
-          {/* AI Assistant Service Card */}
-          {state.settings?.showAssistant !== false && (
-            <div className="service-card" onClick={() => openPanel('assistant')}>
-              <div className="service-icon">
-                <AssistantIcon />
-              </div>
-              <div className="service-title">Assistant</div>
-            </div>
-          )}
-
-          {/* Shutters Service Card */}
-          {state.settings?.showShutters !== false && (
-            <div className="service-card" onClick={() => openPanel('shutters')}>
-              <div className="service-icon">
-                <ShuttersIcon />
-              </div>
-              <div className="service-title">Shutters</div>
-            </div>
-          )}
-
-          {/* Curtains Service Card */}
-          {state.settings?.showCurtains !== false && (
-            <div className="service-card" onClick={() => openPanel('curtains')}>
-              <div className="service-icon">
-                <CurtainsIcon />
-              </div>
-              <div className="service-title">Curtains</div>
-            </div>
-          )}
+        {/* Company Logo Section - Replaces Services Grid */}
+        <div className="company-logo-section" onClick={openServices}>
+          <div className="company-logo-container">
+            <img 
+              src={logoImage} 
+              alt="Clixsys Logo" 
+              className="company-logo"
+            />
+          </div>
         </div>
 
         {/* News Card */}
@@ -516,6 +463,59 @@ function SmartMirror() {
       >
         <SettingsIcon />
       </button>
+
+      {/* Services Bottom Drawer */}
+      {showServices && (
+        <div className="services-modal-overlay" onClick={closeServices}>
+          <div className="services-bottom-drawer" onClick={(e) => e.stopPropagation()}>
+            <div className="services-drawer-header">
+              <div className="services-drawer-handle"></div>
+              <h3>Smart Home Services</h3>
+              <button className="services-close-btn" onClick={closeServices}>
+                ✕
+              </button>
+            </div>
+            <div className="services-drawer-grid">
+              <div className="service-card" onClick={() => { openPanel('lights'); closeServices(); }}>
+                <div className="service-icon">
+                  <LightIcon />
+                </div>
+                <div className="service-title">Lights</div>
+              </div>
+              <div className="service-card" onClick={() => { openPanel('climate'); closeServices(); }}>
+                <div className="service-icon">
+                  <ClimateIcon />
+                </div>
+                <div className="service-title">Climate</div>
+              </div>
+              <div className="service-card" onClick={() => { openPanel('fans'); closeServices(); }}>
+                <div className="service-icon">
+                  <FanIcon />
+                </div>
+                <div className="service-title">Fans</div>
+              </div>
+              <div className="service-card" onClick={() => { openPanel('assistant'); closeServices(); }}>
+                <div className="service-icon">
+                  <AssistantIcon />
+                </div>
+                <div className="service-title">Assistant</div>
+              </div>
+              <div className="service-card" onClick={() => { openPanel('shutters'); closeServices(); }}>
+                <div className="service-icon">
+                  <ShuttersIcon />
+                </div>
+                <div className="service-title">Shutters</div>
+              </div>
+              <div className="service-card" onClick={() => { openPanel('curtains'); closeServices(); }}>
+                <div className="service-icon">
+                  <CurtainsIcon />
+                </div>
+                <div className="service-title">Curtains</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Settings Modal */}
       {showSettings && (

@@ -134,7 +134,6 @@
 .card {
   background: #000000;
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(80, 80, 80, 0.3);
   border-radius: 20px;
   padding: 1.5rem;
   position: relative;
@@ -260,6 +259,7 @@
   margin-bottom: 0.25rem;
   letter-spacing: -0.01em;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  filter: brightness(1.2) contrast(1.1);
 }
 
 /* News Card */
@@ -597,17 +597,150 @@
   }
 }
 
+/* Company Logo Section */
+.company-logo-section {
+  grid-area: services;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 16px;
+  padding: 1rem;
+  background: #000000;
+}
+
+.company-logo-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.company-logo {
+  width:200px;
+  height: 220px;
+  object-fit: contain;
+  filter: brightness(1.1) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+  transition: all 0.3s ease;
+}
+
+
+.logo-subtitle {
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 300;
+  text-align: center;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* Services Bottom Drawer */
+.services-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 9999;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.services-bottom-drawer {
+  background: #000000;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px 20px 0 0;
+  backdrop-filter: blur(30px);
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.6);
+  width: 100%;
+  max-width: 80vw;
+  min-height: 70vh;
+  padding: 20px;
+  position: relative;
+  border-bottom: none;
+  animation: slideUpFromBottom 0.3s ease-out;
+}
+
+@keyframes slideUpFromBottom {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.services-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+}
+
+.services-drawer-handle {
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+}
+
+.services-drawer-header h3 {
+  color: #ffffff;
+  font-size: 1.2rem;
+  font-weight: 500;
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+.services-close-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 20px;
+  color: #ffffff;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 1rem;
+}
+
+.services-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+.services-drawer-grid {
+  display: grid;
+  grid-template-columns: 50% 50%;
+  gap: 15px;
+  max-height: 70vh;
+}
+
 /* Settings Button - Bottom Right */
 .settings-btn {
   position: fixed;
   bottom: 2rem;
   right: 2rem;
-  width: 56px;
-  height: 56px;
+  width: 72px;
+  height: 72px;
   border: none;
   border-radius: 50%;
-  background: 
-    linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+  background: #000000;
   color: #ffffff;
   cursor: pointer;
   display: flex;
@@ -615,34 +748,35 @@
   justify-content: center;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 2px solid rgba(255, 255, 255, 0.2);
   box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
   z-index: 100;
   will-change: transform;
   backface-visibility: hidden;
 }
 
 .settings-btn:hover {
-  background: 
-    linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 100%);
-  transform: scale(1.05);
-  border-color: rgba(255, 255, 255, 0.18);
+  background: #000000;
+  transform: scale(1.1);
+  border-color: rgba(255, 255, 255, 0.3);
   box-shadow: 
-    0 12px 40px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    0 12px 40px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .settings-btn svg {
-  width: 24px;
-  height: 24px;
-  filter: grayscale(100%) brightness(0.8);
+  width: 32px;
+  height: 32px;
+  filter: brightness(1.2);
   transition: all 0.3s ease;
+  stroke-width: 2.5;
 }
 
 .settings-btn:hover svg {
-  filter: grayscale(0%) brightness(1);
+  filter: brightness(1.4);
+  transform: rotate(90deg);
 }
 
 /* Overlay Background */
@@ -722,13 +856,13 @@
   .settings-btn {
     bottom: 1rem;
     right: 1rem;
-    width: 48px;
-    height: 48px;
+    width: 60px;
+    height: 60px;
   }
   
   .settings-btn svg {
-    width: 20px;
-    height: 20px;
+    width: 28px;
+    height: 28px;
   }
   
   /* Modal responsive */
@@ -809,13 +943,13 @@
   .settings-btn {
     bottom: 0.75rem;
     right: 0.75rem;
-    width: 44px;
-    height: 44px;
+    width: 56px;
+    height: 56px;
   }
   
   .settings-btn svg {
-    width: 18px;
-    height: 18px;
+    width: 24px;
+    height: 24px;
   }
   
   /* Modal responsive */
