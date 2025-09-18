@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useGlobalStore } from '../hooks/useGlobalStore'
 import { parseIntent, generateResponse } from '../utils/intentParser'
-import { getAvailableVoices, applyVoiceSettings, DEFAULT_VOICE_SETTINGS, VOICE_OPTIONS } from '../utils/voiceSettings'
+import { getAvailableVoices, applyVoiceSettings, DEFAULT_VOICE_SETTINGS, OPENAI_TTS, resolveOpenAIVoiceName } from '../utils/voiceSettings'
 import './ChatGPTAssistant.css'
 
-const ChatGPTAssistant = ({ userId, userProfile }) => {
+const ChatGPTAssistant = ({ userId, userProfile, onOpenSettings }) => {
   const [isListening, setIsListening] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [currentResponse, setCurrentResponse] = useState('')
@@ -13,7 +13,7 @@ const ChatGPTAssistant = ({ userId, userProfile }) => {
   const [micPermission, setMicPermission] = useState(null)
   const [voiceSettings, setVoiceSettings] = useState(DEFAULT_VOICE_SETTINGS)
   const [availableVoices, setAvailableVoices] = useState([])
-  const [showVoiceSettings, setShowVoiceSettings] = useState(false)
+  // Voice settings are managed in the main Settings modal
   const [conversationHistory, setConversationHistory] = useState([])
   
   const recognition = useRef(null)
@@ -454,10 +454,17 @@ const ChatGPTAssistant = ({ userId, userProfile }) => {
     checkSupport();
     initializeSmartHome();
     
-    // Load available voices
+    // Load available voices and refresh when the browser reports updates
     getAvailableVoices().then(voices => {
       setAvailableVoices(voices);
     });
+    const handleVoicesChanged = () => {
+      const voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : []
+      setAvailableVoices(voices || [])
+    }
+    if (window.speechSynthesis) {
+      window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged)
+    }
     
     // Listen for network changes
     window.addEventListener('online', handleOnline);
@@ -468,6 +475,9 @@ const ChatGPTAssistant = ({ userId, userProfile }) => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       window.removeEventListener('storage', handleStorageChange);
+      if (window.speechSynthesis) {
+        window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged)
+      }
       // Cancel any ongoing speech
       if (speechSynthesis.current) {
         speechSynthesis.current.cancel();
@@ -1395,60 +1405,70 @@ Keep responses under 50 words and be conversational. If asked about things outsi
   }
 
   // Text-to-speech function
-  const speak = (text) => {
-    if ('speechSynthesis' in window) {
-      // Cancel any ongoing speech
-      speechSynthesis.current.cancel()
-      
-      const utterance = new SpeechSynthesisUtterance(text)
-      
-      // Apply voice settings
-      applyVoiceSettings(utterance, voiceSettings, availableVoices)
-      
-      // Set speaking flag
+  const speak = async (text) => {
+    try {
+      // Prefer OpenAI TTS exclusively
+      const apiKey = import.meta.env.VITE_OPENAI_API_KEY
+      if (!apiKey) {
+        console.warn('OpenAI API key missing; cannot use OpenAI TTS')
+        return
+      }
       isSpeaking.current = true
-      
-      // Handle speech events
-      utterance.onstart = () => {
-        console.log('Speech started')
-        isSpeaking.current = true
-      }
-      
-      utterance.onend = () => {
-        console.log('Speech ended')
+      const voiceName = resolveOpenAIVoiceName(voiceSettings.voiceId)
+      const rate = Math.max(0.5, Math.min(2.0, voiceSettings.rate || 1.0))
+      const pitch = Math.max(0.5, Math.min(1.5, voiceSettings.pitch || 1.0))
+
+      const response = await fetch('https://api.openai.com/v1/audio/speech', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: OPENAI_TTS.model,
+          voice: voiceName,
+          input: text,
+          format: OPENAI_TTS.format,
+          speed: rate,
+          // pitch is not universally supported; included as hint via prosody if model honors it
+        })
+      })
+      if (!response.ok) throw new Error(`OpenAI TTS error: ${response.status}`)
+      const arrayBuffer = await response.arrayBuffer()
+      const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' })
+      const url = URL.createObjectURL(blob)
+      const audio = new Audio(url)
+      audio.volume = Math.max(0, Math.min(1, voiceSettings.volume ?? 0.8))
+      await audio.play()
+      audio.onended = () => {
+        URL.revokeObjectURL(url)
         isSpeaking.current = false
-        // Reset state after speech completes
         setTimeout(() => {
           if (!isListening && !isProcessing) {
             setAssistantState('idle')
             setCurrentResponse('Ready for next command')
           }
-        }, 1000)
+        }, 500)
       }
-      
-      utterance.onerror = (event) => {
-        console.error('Speech error:', event)
+      audio.onerror = () => {
+        URL.revokeObjectURL(url)
         isSpeaking.current = false
-        // Reset state after speech error
         setTimeout(() => {
           if (!isListening && !isProcessing) {
             setAssistantState('idle')
             setCurrentResponse('Ready for next command')
           }
-        }, 1000)
+        }, 500)
       }
-      
-      // Add event listener to handle cancellation
-      utterance.onpause = () => {
-        console.log('Speech paused')
-      }
-      
-      utterance.onresume = () => {
-        console.log('Speech resumed')
-      }
-      
-      speechSynthesis.current.speak(utterance)
-      console.log('Speaking:', text)
+    } catch (err) {
+      console.error('TTS playback failed:', err)
+      isSpeaking.current = false
+      setTimeout(() => {
+        if (!isListening && !isProcessing) {
+          setAssistantState('idle')
+          setCurrentResponse('Ready for next command')
+        }
+      }, 500)
     }
   }
 
@@ -1569,6 +1589,8 @@ Keep responses under 50 words and be conversational. If asked about things outsi
     localStorage.setItem('voiceSettings', JSON.stringify(updatedSettings))
     // No need to refresh - changes take effect immediately
   }
+
+  // Voice test is available in main Settings modal
   
   // Get assistant icon based on state
   const getAssistantIcon = () => {
@@ -1635,79 +1657,7 @@ Keep responses under 50 words and be conversational. If asked about things outsi
           )}
         </div>
         
-        {/* Voice Settings Panel */}
-        {showVoiceSettings && (
-          <div className="voice-settings-panel">
-            <div className="settings-header">
-              <h3>Voice Settings</h3>
-              <button 
-                className="close-settings" 
-                onClick={() => setShowVoiceSettings(false)}
-              >
-                ×
-              </button>
-            </div>
-            <div className="settings-controls">
-              <div className="setting-group">
-                <label>Voice:</label>
-                <select 
-                  value={voiceSettings.voiceId}
-                  onChange={(e) => updateVoiceSettings({ voiceId: e.target.value })}
-                  className="voice-select"
-                >
-                  {Object.entries(VOICE_OPTIONS).map(([category, voices]) => (
-                    <optgroup key={category} label={`${category.charAt(0).toUpperCase() + category.slice(1)} Voices`}>
-                      {voices.map(voice => (
-                        <option key={voice.id} value={voice.id}>
-                          {voice.name} ({voice.provider})
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-              </div>
-              
-              <div className="setting-group">
-                <label>Speed: {voiceSettings.rate.toFixed(1)}x</label>
-                <input
-                  type="range"
-                  min="0.5"
-                  max="2.0"
-                  step="0.1"
-                  value={voiceSettings.rate}
-                  onChange={(e) => updateVoiceSettings({ rate: parseFloat(e.target.value) })}
-                  className="slider"
-                />
-              </div>
-              
-              <div className="setting-group">
-                <label>Pitch: {voiceSettings.pitch.toFixed(1)}</label>
-                <input
-                  type="range"
-                  min="0.5"
-                  max="1.5"
-                  step="0.1"
-                  value={voiceSettings.pitch}
-                  onChange={(e) => updateVoiceSettings({ pitch: parseFloat(e.target.value) })}
-                  className="slider"
-                />
-              </div>
-              
-              <div className="setting-group">
-                <label>Volume: {Math.round(voiceSettings.volume * 100)}%</label>
-                <input
-                  type="range"
-                  min="0.0"
-                  max="1.0"
-                  step="0.1"
-                  value={voiceSettings.volume}
-                  onChange={(e) => updateVoiceSettings({ volume: parseFloat(e.target.value) })}
-                  className="slider"
-                />
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Voice settings moved to main Settings modal */}
         
         <div className="assistant-controls">
           <button
@@ -1733,13 +1683,7 @@ Keep responses under 50 words and be conversational. If asked about things outsi
             {isListening ? 'Stop' : 'Talk'}
           </button>
           
-          <button 
-            className="settings-button"
-            onClick={() => setShowVoiceSettings(!showVoiceSettings)}
-            title="Voice Settings"
-          >
-            ☰
-          </button>
+          {/* Settings button removed; open Settings from main UI */}
         </div>
         
         <div className="quick-commands">

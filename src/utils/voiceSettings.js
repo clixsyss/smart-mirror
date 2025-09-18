@@ -213,7 +213,7 @@ export const VOICE_OPTIONS = {
 
 // Default voice settings
 export const DEFAULT_VOICE_SETTINGS = {
-  voiceId: 'female-google-us',
+  voiceId: 'premium-alloy',
   rate: 1.0,      // 0.1 - 10.0 (1.0 is normal)
   pitch: 1.0,     // 0.0 - 2.0 (1.0 is normal)
   volume: 0.8,    // 0.0 - 1.0 (1.0 is loudest)
@@ -237,6 +237,32 @@ export const SPEECH_CONFIG = {
   maxVolume: 1.0,
   defaultVolume: 0.8
 };
+
+// OpenAI TTS configuration
+export const OPENAI_TTS = {
+  model: 'tts-1',
+  format: 'mp3'
+};
+
+export function resolveOpenAIVoiceName(voiceId) {
+  // Map our premium ids to OpenAI voice names
+  const map = {
+    'premium-alloy': 'alloy',
+    'premium-echo': 'echo',
+    'premium-fable': 'fable',
+    'premium-onyx': 'onyx',
+    'premium-nova': 'nova',
+    'premium-shimmer': 'shimmer'
+  };
+  if (map[voiceId]) return map[voiceId];
+  // Try to locate by VOICE_OPTIONS
+  const cfg = Object.values(VOICE_OPTIONS).flat().find(v => v.id === voiceId && v.provider === 'OpenAI');
+  if (!cfg) return 'alloy';
+  const lower = (cfg.name || '').toLowerCase();
+  const known = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'];
+  const found = known.find(k => lower.includes(k));
+  return found || 'alloy';
+}
 
 /**
  * Get available voices from the browser
@@ -270,36 +296,51 @@ export async function getAvailableVoices() {
  * @returns {SpeechSynthesisVoice} Selected voice
  */
 export function findVoice(voices, voiceId, fallbackGender = 'female') {
-  // Try to find exact match
+  if (!voices || voices.length === 0) return undefined;
+
+  // 1) Exact match by voiceURI (persisted ids when using browser voices)
   let voice = voices.find(v => v.voiceURI === voiceId);
-  
-  if (voice) {
-    return voice;
-  }
-  
-  // Try to find by name match
-  const voiceConfig = Object.values(VOICE_OPTIONS)
-    .flat()
-    .find(v => v.id === voiceId);
-  
+  if (voice) return voice;
+
+  // 2) Try to map our configured voice id to a deterministic browser voice
+  // Normalize helpers
+  const toLower = (s) => (s || '').toLowerCase();
+  const includesAny = (s, arr) => arr.some(k => toLower(s).includes(toLower(k)));
+
+  const voiceConfig = Object.values(VOICE_OPTIONS).flat().find(v => v.id === voiceId);
+
   if (voiceConfig) {
-    // Look for voice with similar name
-    voice = voices.find(v => 
-      v.name.toLowerCase().includes(voiceConfig.name.toLowerCase().split(' ')[0]) ||
-      v.lang === voiceConfig.lang
-    );
+    // Prefer language match first
+    const langCandidates = voices.filter(v => v.lang === voiceConfig.lang);
+
+    // If OpenAI provider was chosen, bias to an English, neutral-sounding default in the browser
+    if (voiceConfig.provider === 'OpenAI') {
+      // Prefer en-US Google/Android voices when available
+      const openAiPref = langCandidates.find(v => includesAny(v.name, ['google', 'us', 'english']))
+        || voices.find(v => includesAny(v.name, ['google', 'us', 'english']))
+        || voices.find(v => v.lang && v.lang.startsWith('en'));
+      if (openAiPref) return openAiPref;
+    }
+
+    // Otherwise try to match by partial name token (e.g., "British", "Australian") or provider hint
+    const nameToken = (voiceConfig.name.split(' ')[0] || '').toLowerCase();
+    voice = langCandidates.find(v => includesAny(v.name, [nameToken]))
+      || voices.find(v => includesAny(v.name, [nameToken]))
+      || langCandidates[0];
+    if (voice) return voice;
   }
-  
-  // Fallback to gender preference
-  if (!voice) {
-    voice = voices.find(v => 
-      v.name.toLowerCase().includes(fallbackGender) ||
-      (!v.name.toLowerCase().includes('male') && fallbackGender === 'female')
-    );
-  }
-  
-  // Final fallback to first available voice
-  return voice || voices[0];
+
+  // 3) Fallback to gender preference heuristics
+  const genderIsFemale = toLower(fallbackGender) === 'female';
+  voice = voices.find(v => {
+    const n = toLower(v.name);
+    return genderIsFemale ? (!n.includes('male') || n.includes('female')) : n.includes('male');
+  });
+  if (voice) return voice;
+
+  // 4) Final fallbacks: prefer English, then first voice
+  voice = voices.find(v => v.lang && v.lang.startsWith('en')) || voices[0];
+  return voice;
 }
 
 /**

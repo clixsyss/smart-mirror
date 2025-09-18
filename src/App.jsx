@@ -462,7 +462,7 @@ function SmartMirror() {
               <button className="modal-close-btn" onClick={closePanel}>×</button>
             </div>
             <div className="modal-content" onMouseMove={handleModalInteraction} onTouchStart={handleModalInteraction}>
-              <SmartAssistant data={state.assistant} actions={actions} userId={user?.uid} userProfile={userProfile} />
+              <SmartAssistant data={state.assistant} actions={actions} userId={user?.uid} userProfile={userProfile} onOpenSettings={openSettings} />
             </div>
           </div>
         </div>

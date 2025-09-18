@@ -449,6 +449,11 @@
   letter-spacing: -0.02em;
 }
 
+.voice-settings-panel .setting-group .quick-cmd {
+  margin-top: 0.8rem;
+  min-width: 140px;
+}
+
 .close-settings {
   background: none;
   border: none;
@@ -499,6 +504,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  width: 100%;
 }
 
 .voice-select:hover {
