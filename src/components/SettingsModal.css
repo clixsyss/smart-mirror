@@ -115,7 +115,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: #ffffff;
 }
 
 .setting-item:hover {
@@ -152,7 +152,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 0.95rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: #ffffff;
   min-width: 120px;
 }
 
@@ -203,7 +203,7 @@
 }
 
 .location-input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
+  color: #ffffff;
 }
 
 .location-input:disabled {
@@ -235,7 +235,7 @@
 }
 
 .custom-message-input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
+  color: #ffffff;
 }
 
 .custom-message-controls {
@@ -376,7 +376,7 @@
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: #ffffff;
 }
 
 .timezone-info {
@@ -467,7 +467,7 @@
 }
 
 .no-devices {
-  color: rgba(255, 255, 255, 0.5);
+  color: #ffffff;
   font-style: italic;
   font-size: 0.9rem;
   text-align: center;
