@@ -37,12 +37,72 @@ const AnalogClock = () => {
     };
   }, [updateTime]);
 
+  const getTimezone = useCallback(() => {
+    // Use manually selected timezone if available
+    if (state.settings?.timezone) {
+      return state.settings.timezone;
+    }
+    
+    // Otherwise auto-detect from location
+    const location = state.settings?.weatherLocation || 'New York, NY';
+    return actions.getTimezoneFromLocation?.(location) || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  }, [state.settings?.timezone, state.settings?.weatherLocation, actions]);
+
+  const applyDstAdjustment = useCallback((date, timezone) => {
+    // Get DST setting
+    const dstSetting = state.settings?.dstAdjustment || 'auto';
+    
+    // If auto, don't adjust (let system handle it)
+    if (dstSetting === 'auto') {
+      return date;
+    }
+    
+    // Check if the timezone actually observes DST
+    try {
+      // Create dates in January and July to check if timezone has DST
+      const jan = new Date(date.getFullYear(), 0, 1);
+      const jul = new Date(date.getFullYear(), 6, 1);
+      
+      const janOffset = new Intl.DateTimeFormat('en', {
+        timeZone: timezone,
+        timeZoneName: 'longOffset'
+      }).formatToParts(jan).find(part => part.type === 'timeZoneName').value;
+      
+      const julOffset = new Intl.DateTimeFormat('en', {
+        timeZone: timezone,
+        timeZoneName: 'longOffset'
+      }).formatToParts(jul).find(part => part.type === 'timeZoneName').value;
+      
+      const hasDst = janOffset !== julOffset;
+      
+      // If timezone doesn't observe DST, don't adjust
+      if (!hasDst) {
+        return date;
+      }
+      
+      // Apply manual DST adjustment
+      const adjustedDate = new Date(date);
+      if (dstSetting === 'summer') {
+        // Add one hour for summer time
+        adjustedDate.setHours(adjustedDate.getHours() + 1);
+      }
+      // For winter time, we don't adjust as it's the standard time
+      
+      return adjustedDate;
+    } catch (error) {
+      console.warn('Could not determine DST status for timezone:', timezone, error);
+      return date;
+    }
+  }, [state.settings?.dstAdjustment]);
+
   // Get time components with fallback to current time if needed
   const safeTime = currentTime || new Date();
-  const hours = safeTime.getHours() % 12;
-  const minutes = safeTime.getMinutes();
-  const seconds = safeTime.getSeconds();
-  const milliseconds = safeTime.getMilliseconds();
+  // Apply DST adjustment to the time
+  const adjustedTime = applyDstAdjustment(safeTime, getTimezone());
+  const hours = adjustedTime.getHours() % 12;
+  const minutes = adjustedTime.getMinutes();
+  const seconds = adjustedTime.getSeconds();
+  const milliseconds = adjustedTime.getMilliseconds();
 
   // Calculate angles with smooth transitions
   const secondAngle = (seconds * 6) + (milliseconds * 0.006);
@@ -53,10 +113,10 @@ const AnalogClock = () => {
     if (!date || isNaN(date.getTime())) return '';
     
     try {
-      const location = state.settings?.weatherLocation || 'New York, NY';
-      const timezone = actions.getTimezoneFromLocation?.(location) || Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const timezone = getTimezone();
+      const adjustedDate = applyDstAdjustment(date, timezone);
       
-      return date.toLocaleDateString('en-US', {
+      return adjustedDate.toLocaleDateString('en-US', {
         weekday: 'long',
         year: 'numeric',
         month: 'long',
@@ -67,17 +127,17 @@ const AnalogClock = () => {
       console.error('Error formatting date:', error);
       return date?.toLocaleDateString() || '';
     }
-  }, [state.settings?.weatherLocation, actions]);
+  }, [getTimezone, applyDstAdjustment]);
 
   const formatDigitalTime = useCallback(() => {
     if (!currentTime) return '--:--';
     
     try {
       const clockFormat = state.settings?.clockFormat || '24';
-      const location = state.settings?.weatherLocation || 'New York, NY';
-      const timezone = actions.getTimezoneFromLocation?.(location) || Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const timezone = getTimezone();
+      const adjustedDate = applyDstAdjustment(currentTime, timezone);
       
-      return currentTime.toLocaleTimeString('en-US', {
+      return adjustedDate.toLocaleTimeString('en-US', {
         hour: '2-digit',
         minute: '2-digit',
         hour12: clockFormat === '12',
@@ -87,13 +147,20 @@ const AnalogClock = () => {
       console.error('Error formatting time:', error);
       return currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
-  }, [currentTime, state.settings?.clockFormat, state.settings?.weatherLocation, actions]);
+  }, [currentTime, state.settings?.clockFormat, getTimezone, applyDstAdjustment]);
+
+  // Number labels for all 12 hours
+  const hourNumbers = ['12', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11'];
+
+  // Get settings with defaults
+  const showDate = state.settings?.showAnalogDate !== false; // Default to true
+  const showDigitalTime = state.settings?.showAnalogDigitalTime !== false; // Default to true
 
   return (
     <div className="analog-clock-container">
       <div className="analog-clock">
         <div className="clock-face">
-          {/* Hour markers */}
+          {/* Hour markers with numbers */}
           {[...Array(12)].map((_, i) => (
             <div
               key={i}
@@ -104,6 +171,7 @@ const AnalogClock = () => {
               }}
             >
               <div className="marker-line"></div>
+              <div className="hour-number">{hourNumbers[i]}</div>
             </div>
           ))}
           
@@ -135,8 +203,12 @@ const AnalogClock = () => {
       </div>
       
       {/* Digital time display below analog clock */}
-      <div className="digital-time-small">{formatDigitalTime()}</div>
-      <div className="date">{formatDate(currentTime)}</div>
+      {showDigitalTime && (
+        <div className="digital-time-small">{formatDigitalTime()}</div>
+      )}
+      {showDate && (
+        <div className="date">{formatDate(currentTime)}</div>
+      )}
     </div>
   );
 };

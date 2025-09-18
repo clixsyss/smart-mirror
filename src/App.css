@@ -107,6 +107,7 @@
 /* Grid Areas */
 .time-card {
   grid-area: time;
+  min-height: 320px;
 }
 
 .weather-card {
@@ -158,7 +159,7 @@
 
 /* Special styling for Time Card - Analog Clock Active State */
 .time-card.analog-clock-active {
-  min-height: 420px;
+  min-height: 320px;
   padding: 1.5rem;
 }
 
@@ -696,8 +697,8 @@
     padding: 1rem;
     gap: 0.8rem;
     grid-template-areas: 
-      "time time"
-      "weather quote"
+      "time weather"
+      "quote quote"
       "services services"
       "news news";
     grid-template-columns: 1fr 1fr;

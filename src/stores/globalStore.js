@@ -119,32 +119,32 @@ class GlobalStore {
     this.updateSection('weather', { loading: true, error: null });
     
     try {
-      // Check if API key is available
-      const apiKey = import.meta.env.VITE_OPENWEATHER_API_KEY;
-      if (!apiKey || apiKey === 'your_openweather_api_key_here') {
-        console.error('❌ OpenWeather API key not configured');
-        const location = this.state.settings?.weatherLocation || 'New York, NY';
-        this.updateSection('weather', {
-          current: {
-            temperature: '--',
-            description: 'API key needed',
-            icon: '01d',
-            location: location
-          },
-          loading: false,
-          error: 'Please configure OpenWeather API key in .env file'
-        });
-        return;
-      }
-
       // Get location from settings
       const location = this.state.settings?.weatherLocation || 'New York, NY';
       console.log('🌤️ Fetching weather for location:', location);
 
       const weatherData = await cacheManager.fetchWithCache(`weather-${location}`, async () => {
-        const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(location)}&appid=${apiKey}&units=metric`;
+        // Using Open-Meteo (completely free, no API key needed)
+        // First, we need to get coordinates for the location
+        const geocodeUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location)}&format=json&limit=1`;
         
-        const response = await fetch(url);
+        const geocodeResponse = await fetch(geocodeUrl);
+        if (!geocodeResponse.ok) {
+          throw new Error(`Geocoding failed: ${geocodeResponse.status}`);
+        }
+        
+        const geocodeData = await geocodeResponse.json();
+        if (!geocodeData || geocodeData.length === 0) {
+          throw new Error(`Location not found: ${location}`);
+        }
+        
+        const { lat, lon } = geocodeData[0];
+        
+        // Now fetch weather data from Open-Meteo with hourly data to get humidity
+        // We'll use the current hour's data for humidity
+        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=relativehumidity_2m,apparent_temperature&temperature_unit=celsius&windspeed_unit=kmh&precipitation_unit=mm`;
+        
+        const response = await fetch(weatherUrl);
         
         if (!response.ok) {
           const errorText = await response.text();
@@ -154,15 +154,28 @@ class GlobalStore {
         
         const data = await response.json();
         
+        // Get current hour humidity and feels like temperature
+        const currentHour = new Date().getHours();
+        console.log('Current hour:', currentHour);
+        console.log('Hourly humidity data:', data.hourly?.relativehumidity_2m);
+        console.log('Hourly feels like data:', data.hourly?.apparent_temperature);
+        
+        const humidity = data.hourly?.relativehumidity_2m?.[currentHour];
+        const feelsLike = data.hourly?.apparent_temperature?.[currentHour];
+        
+        console.log('Extracted humidity:', humidity);
+        console.log('Extracted feels like:', feelsLike);
+        
+        // Map Open-Meteo response to our expected format
         return {
-          temperature: Math.round(data.main.temp),
-          description: data.weather[0].description,
-          location: data.name,
-          icon: data.weather[0].icon,
-          humidity: data.main.humidity,
-          windSpeed: data.wind.speed,
-          windDeg: data.wind.deg,
-          feelsLike: Math.round(data.main.feels_like)
+          temperature: Math.round(data.current_weather.temperature),
+          description: this.getWeatherDescription(data.current_weather.weathercode),
+          location: location,
+          icon: this.getWeatherIconCode(data.current_weather.weathercode),
+          humidity: humidity !== undefined && humidity !== null ? Math.round(humidity) : null,
+          windSpeed: data.current_weather.windspeed,
+          windDeg: data.current_weather.winddirection,
+          feelsLike: feelsLike !== undefined && feelsLike !== null ? Math.round(feelsLike) : null
         };
       }, 15 * 60 * 1000); // 15 minutes cache
       
@@ -211,6 +224,59 @@ class GlobalStore {
         lastUpdated: Date.now()
       });
     }
+  }
+
+  // Helper method to convert Open-Meteo weather codes to descriptions
+  getWeatherDescription(weatherCode) {
+    const weatherDescriptions = {
+      0: 'Clear sky',
+      1: 'Mainly clear',
+      2: 'Partly cloudy',
+      3: 'Overcast',
+      45: 'Fog',
+      48: 'Depositing rime fog',
+      51: 'Light drizzle',
+      53: 'Moderate drizzle',
+      55: 'Dense drizzle',
+      56: 'Light freezing drizzle',
+      57: 'Dense freezing drizzle',
+      61: 'Slight rain',
+      63: 'Moderate rain',
+      65: 'Heavy rain',
+      66: 'Light freezing rain',
+      67: 'Heavy freezing rain',
+      71: 'Slight snow fall',
+      73: 'Moderate snow fall',
+      75: 'Heavy snow fall',
+      77: 'Snow grains',
+      80: 'Slight rain showers',
+      81: 'Moderate rain showers',
+      82: 'Violent rain showers',
+      85: 'Slight snow showers',
+      86: 'Heavy snow showers',
+      95: 'Thunderstorm',
+      96: 'Thunderstorm with slight hail',
+      99: 'Thunderstorm with heavy hail'
+    };
+    
+    return weatherDescriptions[weatherCode] || 'Unknown';
+  }
+
+  // Helper method to convert Open-Meteo weather codes to icon codes
+  getWeatherIconCode(weatherCode) {
+    // Mapping to OpenWeatherMap icon codes used in the UI
+    if (weatherCode === 0) return '01d'; // Clear sky
+    if (weatherCode === 1) return '01d'; // Mainly clear
+    if (weatherCode === 2) return '02d'; // Partly cloudy
+    if (weatherCode === 3) return '04d'; // Overcast
+    if ([45, 48].includes(weatherCode)) return '50d'; // Fog
+    if ([51, 53, 55, 56, 57].includes(weatherCode)) return '09d'; // Drizzle
+    if ([61, 63, 65, 66, 67].includes(weatherCode)) return '10d'; // Rain
+    if ([71, 73, 75, 77].includes(weatherCode)) return '13d'; // Snow
+    if ([80, 81, 82].includes(weatherCode)) return '09d'; // Rain showers
+    if ([85, 86].includes(weatherCode)) return '13d'; // Snow showers
+    if ([95, 96, 99].includes(weatherCode)) return '11d'; // Thunderstorm
+    return '01d'; // Default
   }
 
   // News methods
@@ -747,20 +813,41 @@ class GlobalStore {
     cacheManager.clear(`weather-${oldLocation}`);
     // Trigger weather refresh with new location
     this.fetchWeather();
+    
+    // Auto-detect timezone when location changes
+    if (!this.state.settings?.timezone) {
+      const detectedTimezone = this.getTimezoneFromLocation(location);
+      this.updateSettings({ timezone: detectedTimezone });
+    }
   }
 
   // Test weather API directly (for debugging)
   async testWeatherAPI(location = 'New York, NY') {
     try {
-      const apiKey = import.meta.env.VITE_OPENWEATHER_API_KEY;
-      if (!apiKey || apiKey === 'your_openweather_api_key_here') {
-        console.error('❌ OpenWeather API key not configured');
-        return { error: 'API key not configured' };
-      }
-
-      const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(location)}&appid=${apiKey}&units=metric`;
+      // Test with Open-Meteo (completely free)
+      console.log('🧪 Testing Open-Meteo API for location:', location);
       
-      const response = await fetch(url);
+      // First, we need to get coordinates for the location
+      const geocodeUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location)}&format=json&limit=1`;
+      
+      const geocodeResponse = await fetch(geocodeUrl);
+      if (!geocodeResponse.ok) {
+        const errorText = await geocodeResponse.text();
+        console.error('🧪 Geocoding error:', errorText);
+        return { error: `Geocoding error: ${geocodeResponse.status} - ${errorText}` };
+      }
+      
+      const geocodeData = await geocodeResponse.json();
+      if (!geocodeData || geocodeData.length === 0) {
+        return { error: `Location not found: ${location}` };
+      }
+      
+      const { lat, lon } = geocodeData[0];
+      
+      // Now fetch weather data from Open-Meteo with hourly data to get humidity
+      const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=relativehumidity_2m,apparent_temperature&temperature_unit=celsius`;
+      
+      const response = await fetch(weatherUrl);
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -770,12 +857,19 @@ class GlobalStore {
       
       const data = await response.json();
       
+      // Get current hour humidity and feels like temperature
+      const currentHour = new Date().getHours();
+      const humidity = data.hourly?.relativehumidity_2m?.[currentHour] || 'N/A';
+      const feelsLike = data.hourly?.apparent_temperature?.[currentHour] || Math.round(data.current_weather.temperature);
+      
       return {
         success: true,
-        temperature: Math.round(data.main.temp),
-        description: data.weather[0].description,
-        location: data.name,
-        icon: data.weather[0].icon
+        temperature: Math.round(data.current_weather.temperature),
+        description: this.getWeatherDescription(data.current_weather.weathercode),
+        location: location,
+        icon: this.getWeatherIconCode(data.current_weather.weathercode),
+        humidity: humidity,
+        feelsLike: Math.round(feelsLike)
       };
     } catch (error) {
       console.error('🧪 Test API error:', error);
@@ -787,38 +881,187 @@ class GlobalStore {
     this.updateSettings({ clockFormat: format });
   }
 
-  // Get timezone from location (simplified mapping)
+  // Get timezone from location (improved mapping)
   getTimezoneFromLocation(location) {
     const locationLower = location.toLowerCase();
     
-    // Simple timezone mapping for common locations
+    // More comprehensive timezone mapping for common locations
     const timezoneMap = {
+      // US Major Cities
       'new york': 'America/New_York',
-      'london': 'Europe/London',
-      'paris': 'Europe/Paris',
-      'tokyo': 'Asia/Tokyo',
-      'sydney': 'Australia/Sydney',
       'los angeles': 'America/Los_Angeles',
       'chicago': 'America/Chicago',
+      'houston': 'America/Chicago',
+      'phoenix': 'America/Phoenix',
+      'philadelphia': 'America/New_York',
+      'san antonio': 'America/Chicago',
+      'san diego': 'America/Los_Angeles',
+      'dallas': 'America/Chicago',
+      'san jose': 'America/Los_Angeles',
+      'austin': 'America/Chicago',
+      'jacksonville': 'America/New_York',
+      'fort worth': 'America/Chicago',
+      'columbus': 'America/New_York',
+      'charlotte': 'America/New_York',
+      'san francisco': 'America/Los_Angeles',
+      'indianapolis': 'America/Indiana/Indianapolis',
+      'seattle': 'America/Los_Angeles',
       'denver': 'America/Denver',
+      'washington': 'America/New_York',
+      'boston': 'America/New_York',
+      'el paso': 'America/Denver',
+      'nashville': 'America/Chicago',
+      'detroit': 'America/Detroit',
+      'oklahoma city': 'America/Chicago',
+      'portland': 'America/Los_Angeles',
+      'las vegas': 'America/Los_Angeles',
+      'memphis': 'America/Chicago',
+      'louisville': 'America/Kentucky/Louisville',
+      'baltimore': 'America/New_York',
+      'milwaukee': 'America/Chicago',
+      'albuquerque': 'America/Denver',
+      'tucson': 'America/Phoenix',
+      'fresno': 'America/Los_Angeles',
+      'sacramento': 'America/Los_Angeles',
+      'mesa': 'America/Phoenix',
+      'kansas city': 'America/Chicago',
+      'atlanta': 'America/New_York',
+      'long beach': 'America/Los_Angeles',
+      'colorado springs': 'America/Denver',
+      'raleigh': 'America/New_York',
+      'miami': 'America/New_York',
+      'virginia beach': 'America/New_York',
+      'omaha': 'America/Chicago',
+      'oakland': 'America/Los_Angeles',
+      'minneapolis': 'America/Chicago',
+      'tulsa': 'America/Chicago',
+      'arlington': 'America/Chicago',
+      'tampa': 'America/New_York',
+      'new orleans': 'America/Chicago',
+      'wichita': 'America/Chicago',
+      'cleveland': 'America/New_York',
+      'bakersfield': 'America/Los_Angeles',
+      'aurora': 'America/Chicago',
+      'anaheim': 'America/Los_Angeles',
+      'honolulu': 'Pacific/Honolulu',
+      'pittsburgh': 'America/New_York',
+      'lexington': 'America/New_York',
+      'stockton': 'America/Los_Angeles',
+      'cincinnati': 'America/New_York',
+      'st. paul': 'America/Chicago',
+      'toledo': 'America/New_York',
+      'greensboro': 'America/New_York',
+      'newark': 'America/New_York',
+      'plano': 'America/Chicago',
+      'henderson': 'America/Los_Angeles',
+      'lincoln': 'America/Chicago',
+      'buffalo': 'America/New_York',
+      'jersey city': 'America/New_York',
+      'chula vista': 'America/Los_Angeles',
+      'fort wayne': 'America/Indiana/Indianapolis',
+      'orlando': 'America/New_York',
+      'st. petersburg': 'America/New_York',
+      'chandler': 'America/Phoenix',
+      'laredo': 'America/Chicago',
+      'norfolk': 'America/New_York',
+      'durham': 'America/New_York',
+      'madison': 'America/Chicago',
+      'lubbock': 'America/Chicago',
+      'winston-salem': 'America/New_York',
+      'garland': 'America/Chicago',
+      'glendale': 'America/Phoenix',
+      'hialeah': 'America/New_York',
+      'reno': 'America/Los_Angeles',
+      'baton rouge': 'America/Chicago',
+      'irving': 'America/Chicago',
+      
+      // Canada
       'toronto': 'America/Toronto',
+      'montreal': 'America/Montreal',
       'vancouver': 'America/Vancouver',
-      'mexico city': 'America/Mexico_City',
-      'sao paulo': 'America/Sao_Paulo',
-      'madrid': 'Europe/Madrid',
+      'calgary': 'America/Edmonton',
+      'edmonton': 'America/Edmonton',
+      'ottawa': 'America/Toronto',
+      'winnipeg': 'America/Winnipeg',
+      'quebec city': 'America/Montreal',
+      'hamilton': 'America/Toronto',
+      'halifax': 'America/Halifax',
+      
+      // Europe
+      'london': 'Europe/London',
+      'paris': 'Europe/Paris',
       'berlin': 'Europe/Berlin',
       'rome': 'Europe/Rome',
+      'madrid': 'Europe/Madrid',
+      'amsterdam': 'Europe/Amsterdam',
+      'brussels': 'Europe/Brussels',
+      'vienna': 'Europe/Vienna',
+      'stockholm': 'Europe/Stockholm',
+      'oslo': 'Europe/Oslo',
+      'copenhagen': 'Europe/Copenhagen',
+      'helsinki': 'Europe/Helsinki',
+      'athens': 'Europe/Athens',
+      'lisbon': 'Europe/Lisbon',
+      'prague': 'Europe/Prague',
+      'budapest': 'Europe/Budapest',
+      'warsaw': 'Europe/Warsaw',
+      'dublin': 'Europe/Dublin',
+      'zurich': 'Europe/Zurich',
       'moscow': 'Europe/Moscow',
+      
+      // Asia
+      'tokyo': 'Asia/Tokyo',
       'beijing': 'Asia/Shanghai',
+      'shanghai': 'Asia/Shanghai',
       'hong kong': 'Asia/Hong_Kong',
       'singapore': 'Asia/Singapore',
       'dubai': 'Asia/Dubai',
+      'bangkok': 'Asia/Bangkok',
+      'kuala lumpur': 'Asia/Kuala_Lumpur',
+      'jakarta': 'Asia/Jakarta',
+      'manila': 'Asia/Manila',
+      'seoul': 'Asia/Seoul',
+      'taipei': 'Asia/Taipei',
       'mumbai': 'Asia/Kolkata',
       'delhi': 'Asia/Kolkata',
+      'bangalore': 'Asia/Kolkata',
+      'chennai': 'Asia/Kolkata',
+      'kolkata': 'Asia/Kolkata',
+      'dhaka': 'Asia/Dhaka',
+      'karachi': 'Asia/Karachi',
+      
+      // Australia & New Zealand
+      'sydney': 'Australia/Sydney',
+      'melbourne': 'Australia/Melbourne',
+      'brisbane': 'Australia/Brisbane',
+      'perth': 'Australia/Perth',
+      'adelaide': 'Australia/Adelaide',
+      'auckland': 'Pacific/Auckland',
+      'wellington': 'Pacific/Auckland',
+      
+      // Middle East & Africa
       'cairo': 'Africa/Cairo',
       'johannesburg': 'Africa/Johannesburg',
       'lagos': 'Africa/Lagos',
-      'nairobi': 'Africa/Nairobi'
+      'nairobi': 'Africa/Nairobi',
+      'tel aviv': 'Asia/Jerusalem',
+      'riyadh': 'Asia/Riyadh',
+      'istanbul': 'Europe/Istanbul',
+      
+      // South America
+      'sao paulo': 'America/Sao_Paulo',
+      'buenos aires': 'America/Argentina/Buenos_Aires',
+      'lima': 'America/Lima',
+      'bogota': 'America/Bogota',
+      'santiago': 'America/Santiago',
+      'caracas': 'America/Caracas',
+      'quito': 'America/Guayaquil',
+      'montevideo': 'America/Montevideo',
+      'la paz': 'America/La_Paz',
+      'asuncion': 'America/Asuncion',
+      'georgetown': 'America/Guyana',
+      'paramaribo': 'America/Paramaribo',
+      'cayenne': 'America/Cayenne'
     };
     
     // Try to find a match
@@ -828,8 +1071,8 @@ class GlobalStore {
       }
     }
     
-    // Default to UTC if no match found
-    return 'UTC';
+    // Default to system timezone if no match found
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
   }
 
   updateDisplaySetting(key, value) {
@@ -892,7 +1135,7 @@ class GlobalStore {
         await roomsStore.updateDevice(userId, roomId, deviceId, { state });
         // Refresh smart home data to get updated state
         this.fetchSmartHomeData(userId);
-        }
+      }
     } catch (error) {
       console.error('Error toggling light:', error);
       throw error;
@@ -919,7 +1162,7 @@ class GlobalStore {
         await roomsStore.updateDevice(userId, roomId, deviceId, { brightness });
         // Refresh smart home data to get updated state
         this.fetchSmartHomeData(userId);
-        }
+      }
     } catch (error) {
       console.error('Error setting light brightness:', error);
       throw error;
@@ -946,7 +1189,7 @@ class GlobalStore {
         await roomsStore.updateDevice(userId, roomId, deviceId, { state });
         // Refresh smart home data to get updated state
         this.fetchSmartHomeData(userId);
-        }
+      }
     } catch (error) {
       console.error('Error setting climate state:', error);
       throw error;
@@ -973,7 +1216,7 @@ class GlobalStore {
         await roomsStore.updateDevice(userId, roomId, deviceId, { temperature });
         // Refresh smart home data to get updated state
         this.fetchSmartHomeData(userId);
-        }
+      }
     } catch (error) {
       console.error('Error setting climate temperature:', error);
       throw error;
@@ -1000,7 +1243,7 @@ class GlobalStore {
         await roomsStore.updateDevice(userId, roomId, deviceId, { mode });
         // Refresh smart home data to get updated state
         this.fetchSmartHomeData(userId);
-        }
+      }
     } catch (error) {
       console.error('Error setting climate mode:', error);
       throw error;
@@ -1027,7 +1270,7 @@ class GlobalStore {
         await roomsStore.updateDevice(userId, roomId, deviceId, { speed });
         // Refresh smart home data to get updated state
         this.fetchSmartHomeData(userId);
-        }
+      }
     } catch (error) {
       console.error('Error setting fan speed:', error);
       throw error;

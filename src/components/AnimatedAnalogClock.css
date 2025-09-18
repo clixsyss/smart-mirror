@@ -1,0 +1,520 @@
+/* Perfect Circular Watch Face */
+.premium-analog-clock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 1rem;
+  position: relative;
+}
+
+.premium-watch-container {
+  position: relative;
+  width: 260px;
+  height: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Perfect Circle - No Distortion */
+.premium-watch-face {
+  position: relative;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.6));
+  transform: none; /* Ensure perfect circle */
+}
+
+/* Perfect Circular Outer Ring */
+.premium-outer-ring {
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: 
+    radial-gradient(circle at center, 
+      rgba(120, 120, 120, 0.9) 0%, 
+      rgba(90, 90, 90, 0.95) 30%, 
+      rgba(60, 60, 60, 0.98) 70%, 
+      rgba(30, 30, 30, 1) 100%
+    );
+  box-shadow: 
+    0 0 40px rgba(0, 0, 0, 0.8),
+    inset 0 4px 12px rgba(255, 255, 255, 0.15),
+    inset 0 -4px 12px rgba(0, 0, 0, 0.6),
+    inset 0 0 0 2px rgba(160, 160, 160, 0.3);
+  border: 1px solid rgba(140, 140, 140, 0.4);
+}
+
+/* Perfect Circular Inner Face */
+.premium-inner-face {
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: 
+    radial-gradient(circle at center, 
+      rgba(50, 50, 50, 0.95) 0%, 
+      rgba(30, 30, 30, 0.98) 50%, 
+      rgba(15, 15, 15, 1) 100%
+    );
+  box-shadow: 
+    inset 0 6px 15px rgba(0, 0, 0, 0.8),
+    inset 0 -2px 8px rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(100, 100, 100, 0.3);
+  overflow: hidden;
+}
+
+/* Premium Hour Markers */
+.premium-hour-marker {
+  position: absolute;
+  width: 4px;
+  height: 25px;
+  top: 50%;
+  left: 50%;
+  transform-origin: 2px 90px;
+  z-index: 15;
+}
+
+.premium-hour-marker.main {
+  width: 6px;
+  height: 35px;
+}
+
+.premium-marker-line {
+  width: 100%;
+  height: 100%;
+  background: 
+    linear-gradient(180deg, 
+      rgba(220, 220, 220, 0.95) 0%, 
+      rgba(180, 180, 180, 0.9) 30%,
+      rgba(140, 140, 140, 0.85) 70%,
+      rgba(100, 100, 100, 0.7) 100%
+    );
+  border-radius: 2px;
+  box-shadow: 
+    0 0 8px rgba(255, 255, 255, 0.3),
+    0 2px 6px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.premium-hour-marker.main .premium-marker-line {
+  background: 
+    linear-gradient(180deg, 
+      rgba(255, 255, 255, 0.98) 0%, 
+      rgba(220, 220, 220, 0.95) 20%,
+      rgba(180, 180, 180, 0.9) 50%,
+      rgba(140, 140, 140, 0.85) 80%,
+      rgba(100, 100, 100, 0.8) 100%
+    );
+  box-shadow: 
+    0 0 12px rgba(255, 255, 255, 0.6),
+    0 3px 8px rgba(0, 0, 0, 0.6),
+    inset 0 2px 0 rgba(255, 255, 255, 0.4);
+}
+
+/* Perfect Gray Hour Numbers */
+.premium-hour-number {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.2rem;
+  font-weight: 600;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  color: rgba(240, 240, 240, 0.95);
+  user-select: none;
+  z-index: 20;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-shadow: 
+    0 0 8px rgba(255, 255, 255, 0.4),
+    0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* Premium Watch Hands */
+.premium-clock-hand {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform-origin: 50% 100%;
+  z-index: 25;
+  pointer-events: none;
+}
+
+/* Perfect Gray Hour Hand */
+.premium-hand-body.hour {
+  width: 7px;
+  height: 60px;
+  margin-top: -60px;
+  margin-left: -3.5px;
+  border-radius: 3px 3px 0 0;
+  background: 
+    linear-gradient(180deg, 
+      rgba(240, 240, 240, 0.98) 0%, 
+      rgba(220, 220, 220, 0.95) 20%,
+      rgba(200, 200, 200, 0.9) 40%,
+      rgba(180, 180, 180, 0.85) 60%,
+      rgba(160, 160, 160, 0.8) 80%,
+      rgba(140, 140, 140, 0.75) 100%
+    );
+  box-shadow: 
+    0 0 15px rgba(0, 0, 0, 0.6),
+    0 4px 10px rgba(0, 0, 0, 0.5),
+    inset 0 2px 0 rgba(255, 255, 255, 0.4);
+  position: relative;
+}
+
+.premium-hand-body.hour::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 1px;
+  right: 1px;
+  height: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, transparent 100%);
+  border-radius: 2px;
+}
+
+.premium-hand-body.hour::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 12px;
+  height: 12px;
+  background: 
+    radial-gradient(circle at center, 
+      rgba(255, 255, 255, 0.95) 0%, 
+      rgba(200, 200, 200, 0.85) 50%,
+      rgba(150, 150, 150, 0.75) 100%
+    );
+  border-radius: 50%;
+  border: 2px solid rgba(180, 180, 180, 0.7);
+  box-shadow: 
+    0 3px 8px rgba(0, 0, 0, 0.5),
+    0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+/* Perfect Gray Minute Hand */
+.premium-hand-body.minute {
+  width: 4px;
+  height: 85px;
+  margin-top: -85px;
+  margin-left: -2px;
+  border-radius: 2px 2px 0 0;
+  background: 
+    linear-gradient(180deg, 
+      rgba(250, 250, 250, 0.99) 0%, 
+      rgba(230, 230, 230, 0.96) 15%,
+      rgba(210, 210, 210, 0.93) 30%,
+      rgba(190, 190, 190, 0.9) 50%,
+      rgba(170, 170, 170, 0.87) 70%,
+      rgba(150, 150, 150, 0.8) 100%
+    );
+  box-shadow: 
+    0 0 16px rgba(0, 0, 0, 0.6),
+    0 4px 10px rgba(0, 0, 0, 0.5),
+    inset 0 2px 0 rgba(255, 255, 255, 0.5);
+  position: relative;
+}
+
+.premium-hand-body.minute::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 0.5px;
+  right: 0.5px;
+  height: 22px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, transparent 100%);
+  border-radius: 1px;
+}
+
+.premium-hand-body.minute::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 8px;
+  background: 
+    radial-gradient(circle at center, 
+      rgba(255, 255, 255, 0.95) 0%, 
+      rgba(200, 200, 200, 0.85) 50%,
+      rgba(150, 150, 150, 0.75) 100%
+    );
+  border-radius: 50%;
+  border: 1px solid rgba(180, 180, 180, 0.7);
+  box-shadow: 
+    0 2px 6px rgba(0, 0, 0, 0.5),
+    0 0 8px rgba(255, 255, 255, 0.3);
+}
+
+/* Elegant Gray Second Hand */
+.premium-second-hand-body {
+  width: 1.5px;
+  height: 95px;
+  margin-top: -95px;
+  margin-left: -0.75px;
+  border-radius: 1px;
+  background: 
+    linear-gradient(180deg, 
+      rgba(200, 200, 200, 0.95) 0%, 
+      rgba(180, 180, 180, 0.9) 20%,
+      rgba(160, 160, 160, 0.85) 40%,
+      rgba(140, 140, 140, 0.8) 60%,
+      rgba(120, 120, 120, 0.75) 80%,
+      rgba(100, 100, 100, 0.7) 100%
+    );
+  box-shadow: 
+    0 0 15px rgba(255, 255, 255, 0.4),
+    0 3px 8px rgba(0, 0, 0, 0.5);
+  position: relative;
+}
+
+.premium-second-hand-body::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 0;
+  right: 0;
+  height: 25px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, transparent 100%);
+  border-radius: 1px;
+}
+
+.premium-second-hand-body::after {
+  content: '';
+  position: absolute;
+  bottom: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  background: 
+    radial-gradient(circle at center, 
+      rgba(220, 220, 220, 0.95) 0%, 
+      rgba(180, 180, 180, 0.85) 50%,
+      rgba(140, 140, 140, 0.75) 100%
+    );
+  border-radius: 50%;
+  border: 1px solid rgba(160, 160, 160, 0.7);
+  box-shadow: 
+    0 0 8px rgba(255, 255, 255, 0.4),
+    0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Second Hand Counterweight */
+.premium-second-counterweight {
+  position: absolute;
+  bottom: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 18px;
+  background: 
+    linear-gradient(180deg, 
+      rgba(140, 140, 140, 0.9) 0%,
+      rgba(160, 160, 160, 0.8) 50%,
+      rgba(180, 180, 180, 0.7) 100%
+    );
+  border-radius: 2px;
+  border: 1px solid rgba(120, 120, 120, 0.6);
+  box-shadow: 
+    0 0 6px rgba(255, 255, 255, 0.3),
+    0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* Perfect Gray Center Hub */
+.premium-center-hub {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  transform: translate(-50%, -50%);
+  z-index: 30;
+  border-radius: 50%;
+  background: 
+    radial-gradient(circle at center, 
+      rgba(255, 255, 255, 0.98) 0%, 
+      rgba(220, 220, 220, 0.95) 25%,
+      rgba(180, 180, 180, 0.9) 50%,
+      rgba(140, 140, 140, 0.85) 75%,
+      rgba(100, 100, 100, 0.8) 100%
+    );
+  border: 2px solid rgba(180, 180, 180, 0.7);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+  box-shadow: 
+    0 0 20px rgba(255, 255, 255, 0.4),
+    0 4px 8px rgba(0, 0, 0, 0.5),
+    inset 0 2px 4px rgba(255, 255, 255, 0.5);
+}
+
+.premium-center-ring {
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  bottom: -1px;
+  border-radius: 50%;
+  border: 1px solid rgba(200, 200, 200, 0.4);
+  background: 
+    conic-gradient(from 0deg,
+      rgba(200, 200, 200, 0.2) 0deg,
+      transparent 90deg,
+      rgba(180, 180, 180, 0.1) 180deg,
+      transparent 270deg,
+      rgba(200, 200, 200, 0.2) 360deg
+    );
+}
+
+.premium-center-core {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  border-radius: 50%;
+  background: 
+    radial-gradient(circle at center, 
+      rgba(240, 240, 240, 0.9) 0%, 
+      rgba(200, 200, 200, 0.7) 50%,
+      rgba(160, 160, 160, 0.5) 100%
+    );
+  border: 1px solid rgba(180, 180, 180, 0.6);
+  box-shadow: 
+    inset 0 1px 2px rgba(255, 255, 255, 0.4),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.2);
+}
+
+/* Digital Display */
+.premium-digital-display {
+  text-align: center;
+  margin-top: 1.5rem;
+  z-index: 30;
+}
+
+.premium-digital-time {
+  font-size: 2rem;
+  font-weight: 300;
+  color: #ffffff;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 0.5rem;
+  letter-spacing: 2px;
+}
+
+.premium-digital-date {
+  font-size: 1rem;
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .premium-watch-container {
+    width: 240px;
+    height: 240px;
+  }
+  
+  .premium-watch-face {
+    width: 220px;
+    height: 220px;
+  }
+  
+  .premium-digital-time {
+    font-size: 1.8rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .premium-watch-container {
+    width: 200px;
+    height: 200px;
+  }
+  
+  .premium-watch-face {
+    width: 180px;
+    height: 180px;
+  }
+  
+  .premium-hour-marker {
+    height: 20px;
+    transform-origin: 2px 75px;
+  }
+  
+  .premium-hour-marker.main {
+    height: 28px;
+  }
+  
+  .premium-hour-number {
+    font-size: 1.1rem;
+  }
+  
+  .premium-hand-body.hour {
+    height: 55px;
+    margin-top: -55px;
+  }
+  
+  .premium-hand-body.minute {
+    height: 75px;
+    margin-top: -75px;
+  }
+  
+  .premium-second-hand-body {
+    height: 80px;
+    margin-top: -80px;
+  }
+  
+  .premium-digital-time {
+    font-size: 1.6rem;
+  }
+  
+  .premium-digital-date {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .premium-watch-container {
+    width: 180px;
+    height: 180px;
+  }
+  
+  .premium-watch-face {
+    width: 160px;
+    height: 160px;
+  }
+  
+  .premium-hour-number {
+    font-size: 1rem;
+  }
+  
+  .premium-digital-time {
+    font-size: 1.4rem;
+  }
+  
+  .premium-digital-date {
+    font-size: 0.8rem;
+  }
+}

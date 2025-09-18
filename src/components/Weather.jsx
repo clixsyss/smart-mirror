@@ -138,7 +138,12 @@ const Weather = ({ data }) => {
   }
 
   // Calculate feels like temperature with fallback
-  const feelsLike = current?.feelsLike || Math.round((current?.temperature || 0) * 0.9);
+  const feelsLike = current?.feelsLike || current?.apparent_temperature || Math.round((current?.temperature || 0) * 0.9);
+  
+  // Debug logging to see what data we have
+  console.log('Weather data:', current);
+  console.log('Humidity:', current?.humidity);
+  console.log('Feels like:', feelsLike);
   
   // Get wind direction from degrees
   const getWindDirection = (degrees) => {
@@ -176,7 +181,11 @@ const Weather = ({ data }) => {
                 </svg>
                 Feels Like
               </span>
-              <span className="detail-value">{feelsLike}°C</span>
+              <span className="detail-value">
+                {current?.feelsLike !== null && current?.feelsLike !== undefined
+                  ? `${current.feelsLike}°C` 
+                  : '--°C'}
+              </span>
             </div>
             <div className="weather-detail">
               <span className="detail-label">
@@ -185,7 +194,11 @@ const Weather = ({ data }) => {
                 </svg>
                 Humidity
               </span>
-              <span className="detail-value">{current.humidity}%</span>
+              <span className="detail-value">
+                {current?.humidity !== null && current?.humidity !== undefined && current?.humidity !== 'N/A'
+                  ? `${current.humidity}%` 
+                  : '--'}
+              </span>
             </div>
           </div>
         )}

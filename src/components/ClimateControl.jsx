@@ -38,13 +38,38 @@ const ClimateControl = ({ data, actions, userId }) => {
   // More flexible function to check if a device is a climate device
   const isClimateDevice = (device) => {
     const deviceType = (device.type || '').toLowerCase();
-    return ['thermostat', 'air_conditioner', 'ac', 'aircon', 'air conditioner', 'air-conditioning'].includes(deviceType);
+    // More comprehensive list of air conditioning device type identifiers
+    return [
+      'thermostat', 
+      'air_conditioner', 
+      'ac', 
+      'aircon', 
+      'air conditioner', 
+      'air-conditioning',
+      'climate'
+    ].includes(deviceType) || 
+    // Also check if the device name includes AC-related terms
+    (device.name || '').toLowerCase().includes('ac') ||
+    (device.name || '').toLowerCase().includes('air conditioner') ||
+    (device.name || '').toLowerCase().includes('air conditioning');
   };
 
   // More flexible function to check if a device has temperature control
   const hasTemperatureControl = (device) => {
     const deviceType = (device.type || '').toLowerCase();
-    return ['thermostat', 'air_conditioner', 'ac', 'aircon', 'air conditioner', 'air-conditioning'].includes(deviceType);
+    return [
+      'thermostat', 
+      'air_conditioner', 
+      'ac', 
+      'aircon', 
+      'air conditioner', 
+      'air-conditioning',
+      'climate'
+    ].includes(deviceType) ||
+    // Also check if the device name includes AC-related terms
+    (device.name || '').toLowerCase().includes('ac') ||
+    (device.name || '').toLowerCase().includes('air conditioner') ||
+    (device.name || '').toLowerCase().includes('air conditioning');
   };
 
   const toggleRoomClimate = async (roomId) => {
