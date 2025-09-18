@@ -51,6 +51,22 @@
   letter-spacing: 0.5px;
 }
 
+.quote-text.custom-message {
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 400;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  padding: 1.2rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.quote-text.custom-message::before,
+.quote-text.custom-message::after {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .quote-text {
     font-size: 1rem;

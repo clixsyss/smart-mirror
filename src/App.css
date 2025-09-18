@@ -127,7 +127,7 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(2, 1fr);
-  gap: 1rem;
+  gap: 2rem;
   width: 100%;
   height: 100%;
   padding: 0.5rem;
@@ -717,7 +717,7 @@
   .services-grid {
     grid-template-columns: repeat(3, 1fr);
     grid-template-rows: repeat(2, 1fr);
-    gap: 0.6rem;
+    gap: 2rem;
     padding: 0.3rem;
   }
   

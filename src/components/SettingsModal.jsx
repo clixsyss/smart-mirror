@@ -730,6 +730,59 @@ const SettingsModal = ({ onClose, state, actions, logout, onInteraction }) => {
             </div>
           </div>
 
+          {/* Custom Message Settings */}
+          <div className="settings-section">
+            <h3>Custom Message</h3>
+            <div className="settings-grid">
+              <label className="setting-item full-width">
+                <input
+                  type="checkbox"
+                  checked={settings.useCustomMessage || false}
+                  onChange={(e) => handleSettingChange('useCustomMessage', e.target.checked)}
+                />
+                <span>Show Custom Message Instead of Quote</span>
+              </label>
+            </div>
+            
+            {settings.useCustomMessage && (
+              <div className="input-group">
+                <textarea
+                  value={settings.customMessage || ''}
+                  onChange={(e) => handleSettingChange('customMessage', e.target.value)}
+                  placeholder="Enter your custom message here..."
+                  className="custom-message-input"
+                  rows="3"
+                  maxLength="200"
+                />
+                <div className="custom-message-controls">
+                  <div className="location-hint">
+                    {(settings.customMessage || '').length}/200 characters
+                  </div>
+                  <div className="custom-message-buttons">
+                    <button
+                      type="button"
+                      onClick={() => handleSettingChange('customMessage', '')}
+                      className="clear-message-btn"
+                      disabled={!(settings.customMessage || '').trim()}
+                    >
+                      Clear Message
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleSettingChange('useCustomMessage', false);
+                        handleSettingChange('customMessage', '');
+                      }}
+                      className="disable-custom-message-btn"
+                    >
+                      Use Quotes Instead
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Unified Location Settings */}
           <div className="settings-section">
             <h3>Location & Time Zone</h3>

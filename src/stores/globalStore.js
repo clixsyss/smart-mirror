@@ -76,6 +76,10 @@ class GlobalStore {
         // Location settings
         weatherLocation: 'New York, NY',
         
+        // Custom message settings
+        useCustomMessage: false,
+        customMessage: '',
+        
         // Device settings
         selectedDevices: {
           lights: [],
@@ -359,12 +363,17 @@ class GlobalStore {
         };
       });
       
-      this.updateSection('quote', {
-        content: quoteData.content,
-        author: quoteData.author,
-        loading: false,
-        lastUpdated: Date.now()
-      });
+      // Check if quoteData is valid before using it
+      if (quoteData && quoteData.content && quoteData.author) {
+        this.updateSection('quote', {
+          content: quoteData.content,
+          author: quoteData.author,
+          loading: false,
+          lastUpdated: Date.now()
+        });
+      } else {
+        throw new Error('Invalid quote data received');
+      }
     } catch (error) {
       console.error('Quote fetch error:', error);
       // Fallback to inspirational quotes

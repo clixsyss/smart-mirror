@@ -200,7 +200,7 @@ function SmartMirror() {
             <Weather data={state.weather} />
           </div>
           <div className="card quote-card">
-            <QuoteOfDay data={state.quote} />
+            <QuoteOfDay data={state.quote} settings={state.settings} />
           </div>
           <div className="services-grid">
             <div className="service-card" onClick={() => openPanel('lights')}>
@@ -251,7 +251,7 @@ function SmartMirror() {
         {/* Quote Card */}
         {state.settings?.showQuote !== false && (
           <div className="card quote-card">
-            <QuoteOfDay data={state.quote} />
+            <QuoteOfDay data={state.quote} settings={state.settings} />
           </div>
         )}
 
