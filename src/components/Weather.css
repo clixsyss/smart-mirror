@@ -22,12 +22,34 @@
   position: relative;
 }
 
+/* Temperature Display */
+.current-temp {
+  font-size: 2.5rem;
+  font-weight: 200;
+  color: #ffffff !important;
+  margin: 0.5rem 0;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  filter: brightness(1.2) contrast(1.1);
+  -webkit-text-fill-color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.current-description {
+  font-size: 1rem;
+  color: #ffffff !important;
+  text-transform: capitalize;
+  margin-bottom: 1rem;
+  filter: brightness(1.2);
+  -webkit-text-fill-color: #ffffff;
+}
+
 .weather-icon {
   margin: 0 0;
   opacity: 0.95;
-  color: #ffffff;
-  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
+  color: #ffffff !important;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4)) brightness(1.2);
   font-size: 3rem;
+  -webkit-text-fill-color: #ffffff;
   position: relative;
   animation: weatherIconFloat 3s ease-in-out infinite alternate;
 }

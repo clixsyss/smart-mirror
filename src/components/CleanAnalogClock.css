@@ -16,11 +16,11 @@
   gap: 1.5rem;
 }
 
-/* Perfect Circle Clock Face */
+/* Compressed Clock Face - Designed to appear circular on compressed screens */
 .clean-clock-face {
   position: relative;
-  width: 220px;
-  height: 220px;
+  width: 240px;
+  height: 200px;
   border-radius: 50%;
   background: 
     radial-gradient(circle at center, 
@@ -52,7 +52,7 @@
   top: 15px;
   left: 50%;
   margin-left: -1.5px;
-  transform-origin: center 95px;
+  transform-origin: center 85px;
   box-shadow: 
     0 0 4px rgba(255, 255, 255, 0.3),
     0 1px 3px rgba(0, 0, 0, 0.5);
@@ -193,12 +193,12 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .clean-clock-face {
-    width: 180px;
-    height: 180px;
+    width: 200px;
+    height: 170px;
   }
   
   .clean-hour-marker {
-    transform-origin: center 75px;
+    transform-origin: center 70px;
     height: 16px;
   }
   
@@ -233,12 +233,12 @@
 
 @media (max-width: 480px) {
   .clean-clock-face {
-    width: 160px;
-    height: 160px;
+    width: 180px;
+    height: 150px;
   }
   
   .clean-hour-marker {
-    transform-origin: center 65px;
+    transform-origin: center 60px;
     height: 14px;
   }
   
@@ -246,6 +246,20 @@
     height: 20px;
   }
   
+  .clean-hour-hand {
+    height: 45px;
+    top: calc(50% - 45px);
+  }
+  
+  .clean-minute-hand {
+    height: 60px;
+    top: calc(50% - 60px);
+  }
+  
+  .clean-second-hand {
+    height: 70px;
+    top: calc(50% - 70px);
+  }
   
   .clean-digital-time {
     font-size: 1.4rem;
