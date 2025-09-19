@@ -84,12 +84,26 @@ const SettingsIcon = () => (
   </svg>
 )
 
+const RotateIcon = () => (
+  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 2v6h-6"/>
+    <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
+    <path d="M3 22v-6h6"/>
+    <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
+  </svg>
+)
+
 function SmartMirror() {
   const [activePanel, setActivePanel] = useState(null) // 'lights', 'climate', 'fans', 'assistant', 'settings', or null
   const [showControls, setShowControls] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showServices, setShowServices] = useState(false)
   const [modalTimeout, setModalTimeout] = useState(null)
+  const [screenRotation, setScreenRotation] = useState(() => {
+    // Load saved rotation from localStorage
+    const saved = localStorage.getItem('screenRotation')
+    return saved ? parseInt(saved) : 0
+  }) // 0, 90, 180, 270 degrees
   const { user, userProfile, loading, logout } = useAuth()
   const { state, actions } = useGlobalStore()
   const connectivity = useConnectivity()
@@ -171,6 +185,13 @@ function SmartMirror() {
     setShowServices(false)
   }
 
+  const handleScreenRotation = () => {
+    const nextRotation = (screenRotation + 90) % 360
+    setScreenRotation(nextRotation)
+    // Save rotation preference
+    localStorage.setItem('screenRotation', nextRotation.toString())
+  }
+
   const handleModalInteraction = () => {
     // Modal interaction no longer resets timeout since we removed auto-close
     // Panels stay open until manually closed
@@ -201,7 +222,13 @@ function SmartMirror() {
   // Show basic interface even if not fully initialized (but only if user is logged in)
   if (!state.app.isInitialized) {
     return (
-      <div className="smart-mirror">
+      <div 
+        className="smart-mirror" 
+        style={{ 
+          transform: `rotate(${screenRotation}deg)`,
+          transition: 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)'
+        }}
+      >
         <div className="mirror-content">
           <div className="card time-card">
             <TimeDate />
@@ -230,7 +257,13 @@ function SmartMirror() {
   }
 
   return (
-    <div className="smart-mirror">
+    <div 
+      className="smart-mirror" 
+      style={{ 
+        transform: `rotate(${screenRotation}deg)`,
+        transition: 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)'
+      }}
+    >
       {/* Main Content - Two Column Grid */}
       <div className="mirror-content">
         {/* Time & Date Card */}
@@ -454,6 +487,15 @@ function SmartMirror() {
           </div>
         </div>
       )}
+
+      {/* Rotation Button - Bottom Left */}
+      <button 
+        className="rotate-btn"
+        onClick={handleScreenRotation}
+        title={`Rotate Screen (Currently ${screenRotation}°)`}
+      >
+        <RotateIcon />
+      </button>
 
       {/* Settings Button - Bottom Right */}
       <button 
