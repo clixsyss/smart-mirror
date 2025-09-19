@@ -5,7 +5,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.85);
+  background-color: #000;
   backdrop-filter: blur(15px);
   z-index: 1000;
   display: flex;
@@ -15,8 +15,7 @@
 }
 
 .settings-content {
-  background: 
-    linear-gradient(135deg, rgba(40, 40, 40, 0.95) 0%, rgba(25, 25, 25, 0.98) 100%);
+  background: #000;
   backdrop-filter: blur(20px);
   border: 1px solid rgba(80, 80, 80, 0.3);
   border-radius: 16px;
@@ -37,7 +36,7 @@
   justify-content: space-between;
   padding: 1.5rem;
   border-bottom: 1px solid rgba(80, 80, 80, 0.3);
-  background: rgba(50, 50, 50, 0.3);
+  background: #000;
 }
 
 .settings-header h2 {
@@ -53,7 +52,7 @@
   height: 32px;
   border: none;
   border-radius: 8px;
-  background: rgba(80, 80, 80, 0.5);
+  background: #000;
   color: #ffffff;
   cursor: pointer;
   display: flex;
@@ -78,7 +77,7 @@
 .settings-section {
   margin-bottom: 1.5rem;
   padding: 1rem;
-  background: rgba(60, 60, 60, 0.2);
+  background: #000;
   border-radius: 12px;
   border: 1px solid rgba(80, 80, 80, 0.3);
 }
@@ -110,17 +109,12 @@
   gap: 0.5rem;
   padding: 0.5rem 0.7rem;
   border-radius: 8px;
-  background: rgba(80, 80, 80, 0.3);
+  background: #000;
   border: 1px solid rgba(100, 100, 100, 0.2);
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 0.8rem;
   color: #ffffff;
-}
-
-.setting-item:hover {
-  background: rgba(100, 100, 100, 0.4);
-  border-color: rgba(120, 120, 120, 0.3);
 }
 
 .setting-item input[type="checkbox"] {
@@ -147,18 +141,13 @@
   gap: 0.5rem;
   padding: 0.75rem 1rem;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.03);
+  background: #000;
   border: 1px solid rgba(255, 255, 255, 0.06);
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 0.95rem;
   color: #ffffff;
   min-width: 120px;
-}
-
-.radio-item:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .radio-item input[type="radio"] {
@@ -185,7 +174,7 @@
   padding: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.04);
+  background: #000;
   color: #ffffff;
   font-size: 1rem;
   backdrop-filter: blur(20px);
@@ -198,7 +187,7 @@
 .voice-select:focus {
   outline: none;
   border-color: rgba(255, 255, 255, 0.2);
-  background-color: rgba(255, 255, 255, 0.06);
+  background-color: #000;
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
 }
 
@@ -216,7 +205,7 @@
   padding: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.04);
+  background: #000;
   color: #ffffff;
   font-size: 1rem;
   backdrop-filter: blur(20px);
@@ -230,7 +219,7 @@
 .custom-message-input:focus {
   outline: none;
   border-color: rgba(255, 255, 255, 0.2);
-  background-color: rgba(255, 255, 255, 0.06);
+  background-color: #000;
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
 }
 
@@ -266,16 +255,11 @@
 }
 
 .clear-message-btn {
-  background: rgba(255, 193, 7, 0.2);
+  background: #000;
   color: #ffc107;
   border: 1px solid rgba(255, 193, 7, 0.3);
 }
 
-.clear-message-btn:hover:not(:disabled) {
-  background: rgba(255, 193, 7, 0.3);
-  border-color: rgba(255, 193, 7, 0.5);
-  transform: translateY(-1px);
-}
 
 .clear-message-btn:disabled {
   opacity: 0.5;
@@ -284,15 +268,9 @@
 }
 
 .disable-custom-message-btn {
-  background: rgba(40, 167, 69, 0.2);
+  background: #000;
   color: #28a745;
   border: 1px solid rgba(40, 167, 69, 0.3);
-}
-
-.disable-custom-message-btn:hover {
-  background: rgba(40, 167, 69, 0.3);
-  border-color: rgba(40, 167, 69, 0.5);
-  transform: translateY(-1px);
 }
 
 .location-select option,
@@ -335,24 +313,9 @@
     linear-gradient(135deg, rgba(0, 123, 255, 0.8) 0%, rgba(0, 123, 255, 0.6) 100%);
 }
 
-.update-location-btn:hover {
-  background: 
-    linear-gradient(135deg, rgba(0, 123, 255, 0.9) 0%, rgba(0, 123, 255, 0.7) 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 8px 24px rgba(0, 123, 255, 0.3);
-}
-
 .detect-location-btn {
-  background: 
-    linear-gradient(135deg, rgba(57, 57, 57, 0.8) 0%, rgba(23, 23, 23, 0.6) 100%);
-  border: 1px solid rgba(152, 153, 152, 0.8);
-}
-
-.detect-location-btn:hover {
-  background: 
-    linear-gradient(135deg, rgba(74, 75, 74, 0.9) 0%, rgba(142, 143, 142, 0.7) 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 8px 24px rgba(40, 167, 69, 0.3);
+  background: #000;
+  border: 1px solid rgba(48, 48, 48, 0.8);
 }
 
 .update-location-btn:disabled,
@@ -414,12 +377,6 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.location-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
-  transform: translateY(-1px);
-}
-
 .device-category {
   margin-bottom: 2rem;
 }
@@ -453,12 +410,6 @@
   color: rgba(255, 255, 255, 0.8);
 }
 
-.device-item:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.08);
-  transform: translateX(4px);
-}
-
 .device-item input[type="checkbox"] {
   width: 16px;
   height: 16px;
@@ -473,7 +424,6 @@
   text-align: center;
   padding: 1rem;
 }
-
 .logout-btn {
   width: 100%;
   padding: 1rem 2rem;

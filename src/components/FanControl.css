@@ -36,9 +36,8 @@
 }
 
 .room-card {
-  background: 
-    linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #000000;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   padding: 1.5rem;
   backdrop-filter: blur(20px);
@@ -54,8 +53,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: 
-    linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0%, transparent 60%);
+  background: #000000;
   pointer-events: none;
   border-radius: 16px;
 }
@@ -111,8 +109,7 @@
 }
 
 .room-toggle.active {
-  background: 
-    linear-gradient(135deg, rgba(0, 123, 255, 0.8) 0%, rgba(0, 123, 255, 0.6) 100%);
+  background: #000000;
   border-color: rgba(0, 123, 255, 0.8);
 }
 
@@ -200,8 +197,7 @@
 }
 
 .device-toggle.active {
-  background: 
-    linear-gradient(135deg, rgba(0, 123, 255, 0.8) 0%, rgba(0, 123, 255, 0.6) 100%);
+  background: #000000;
   border-color: rgba(0, 123, 255, 0.8);
 }
 
@@ -241,8 +237,7 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: 
-    linear-gradient(135deg, rgba(0, 123, 255, 0.8) 0%, rgba(0, 123, 255, 0.6) 100%);
+  background: #000000;
   cursor: pointer;
   border: 2px solid #ffffff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
@@ -258,8 +253,7 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: 
-    linear-gradient(135deg, rgba(0, 123, 255, 0.8) 0%, rgba(0, 123, 255, 0.6) 100%);
+  background: #000000;
   cursor: pointer;
   border: 2px solid #ffffff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);

@@ -9,42 +9,58 @@ const useConnectivity = () => {
   // Test actual internet connectivity (not just network)
   const testInternetConnection = useCallback(async () => {
     try {
-      // Try multiple endpoints for better reliability
+      // For deployed apps (like Netlify), rely more on navigator.onLine
+      // and simple connectivity tests to avoid CORS issues
+      if (!navigator.onLine) {
+        return false;
+      }
+
+      // Simple connectivity test with reliable endpoints
       const endpoints = [
         'https://www.google.com/favicon.ico',
-        'https://httpbin.org/status/200',
-        'https://jsonplaceholder.typicode.com/posts/1',
-        // Add your API endpoint here if you have one
-        '/api/health' // Local health check if available
+        'https://httpbin.org/get',
+        'https://jsonplaceholder.typicode.com/posts/1'
       ];
 
-      // Try each endpoint with a timeout
-      for (const endpoint of endpoints) {
+      // Try just one endpoint with shorter timeout for better UX
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+
+      try {
+        const response = await fetch(endpoints[0], {
+          method: 'GET',
+          mode: 'no-cors',
+          cache: 'no-cache',
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+        
+        // For no-cors requests, if we don't get an error, assume we have internet
+        return true;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        
+        // If first endpoint fails, try a simple CORS-enabled endpoint
         try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-
-          const response = await fetch(endpoint, {
-            method: 'HEAD',
-            mode: 'no-cors',
-            cache: 'no-cache',
-            signal: controller.signal
-          });
-
-          clearTimeout(timeoutId);
+          const fallbackController = new AbortController();
+          const fallbackTimeoutId = setTimeout(() => fallbackController.abort(), 2000);
           
-          // If we get here, we have internet
-          return true;
-        } catch (error) {
-          // Try next endpoint
-          continue;
+          const fallbackResponse = await fetch(endpoints[2], {
+            method: 'GET',
+            signal: fallbackController.signal
+          });
+          
+          clearTimeout(fallbackTimeoutId);
+          return fallbackResponse.ok;
+        } catch (fallbackError) {
+          return false;
         }
       }
-      
-      return false;
     } catch (error) {
       console.warn('Internet connectivity test failed:', error);
-      return false;
+      // Fallback to navigator.onLine for deployed environments
+      return navigator.onLine;
     }
   }, []);
 
@@ -70,15 +86,15 @@ const useConnectivity = () => {
     return hasInternet;
   }, [isOnline, testInternetConnection]);
 
-  // Auto-retry connection with exponential backoff
+  // Auto-retry connection with exponential backoff (less aggressive for deployed apps)
   useEffect(() => {
-    if (!isOnline) {
-      // Calculate retry delay with exponential backoff (max 60 seconds)
-      const baseDelay = 2000; // 2 seconds
-      const maxDelay = 60000; // 60 seconds
-      const delay = Math.min(baseDelay * Math.pow(2, connectionAttempts), maxDelay);
+    if (!isOnline && connectionAttempts < 5) { // Limit retry attempts
+      // Calculate retry delay with exponential backoff (max 30 seconds for deployed environments)
+      const baseDelay = 5000; // 5 seconds (longer initial delay)
+      const maxDelay = 30000; // 30 seconds (shorter max delay)
+      const delay = Math.min(baseDelay * Math.pow(1.5, connectionAttempts), maxDelay);
       
-      console.log(`🔄 Will retry connection in ${delay / 1000}s (attempt ${connectionAttempts + 1})`);
+      console.log(`🔄 Will retry connection in ${delay / 1000}s (attempt ${connectionAttempts + 1}/5)`);
       
       const retryTimeout = setTimeout(() => {
         checkConnectivity();
@@ -112,12 +128,12 @@ const useConnectivity = () => {
     };
   }, [checkConnectivity]);
 
-  // Periodic connectivity check when online (every 30 seconds)
+  // Periodic connectivity check when online (less frequent for deployed apps)
   useEffect(() => {
     if (isOnline) {
       const interval = setInterval(() => {
         checkConnectivity();
-      }, 30000); // Check every 30 seconds when online
+      }, 60000); // Check every 60 seconds when online (less aggressive)
 
       return () => clearInterval(interval);
     }
