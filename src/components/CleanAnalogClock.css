@@ -1,0 +1,273 @@
+/* Clean, Perfect Circular Analog Clock */
+.clean-analog-clock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 1rem;
+}
+
+.clean-clock-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+/* Compressed Clock Face - Designed to appear circular on compressed screens */
+.clean-clock-face {
+  position: relative;
+  width: 240px;
+  height: 200px;
+  border-radius: 50%;
+  background: 
+    radial-gradient(circle at center, 
+      rgba(60, 60, 60, 0.95) 0%, 
+      rgba(40, 40, 40, 0.98) 50%, 
+      rgba(20, 20, 20, 1) 100%
+    );
+  border: 3px solid rgba(120, 120, 120, 0.6);
+  box-shadow: 
+    0 0 30px rgba(0, 0, 0, 0.8),
+    inset 0 4px 10px rgba(255, 255, 255, 0.1),
+    inset 0 -4px 10px rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Hour Markers */
+.clean-hour-marker {
+  position: absolute;
+  width: 3px;
+  height: 20px;
+  background: 
+    linear-gradient(180deg, 
+      rgba(200, 200, 200, 0.9) 0%, 
+      rgba(150, 150, 150, 0.7) 100%
+    );
+  border-radius: 2px;
+  top: 15px;
+  left: 50%;
+  margin-left: -1.5px;
+  transform-origin: center 85px;
+  box-shadow: 
+    0 0 4px rgba(255, 255, 255, 0.3),
+    0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.clean-hour-marker.main {
+  width: 4px;
+  height: 30px;
+  margin-left: -2px;
+  background: 
+    linear-gradient(180deg, 
+      rgba(220, 220, 220, 0.95) 0%, 
+      rgba(180, 180, 180, 0.85) 50%,
+      rgba(140, 140, 140, 0.75) 100%
+    );
+  box-shadow: 
+    0 0 6px rgba(255, 255, 255, 0.4),
+    0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+
+/* Clock Hands */
+.clean-clock-hand {
+  position: absolute;
+  transform-origin: 50% 100%;
+  border-radius: 2px;
+  z-index: 5;
+}
+
+/* Hour Hand */
+.clean-hour-hand {
+  width: 6px;
+  height: 60px;
+  top: calc(50% - 60px);
+  left: calc(50% - 3px);
+  background: 
+    linear-gradient(180deg, 
+      rgba(240, 240, 240, 0.95) 0%, 
+      rgba(200, 200, 200, 0.9) 50%,
+      rgba(160, 160, 160, 0.8) 100%
+    );
+  border-radius: 3px 3px 0 0;
+  box-shadow: 
+    0 0 10px rgba(0, 0, 0, 0.6),
+    0 3px 6px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* Minute Hand */
+.clean-minute-hand {
+  width: 4px;
+  height: 80px;
+  top: calc(50% - 80px);
+  left: calc(50% - 2px);
+  background: 
+    linear-gradient(180deg, 
+      rgba(250, 250, 250, 0.98) 0%, 
+      rgba(220, 220, 220, 0.95) 30%,
+      rgba(190, 190, 190, 0.9) 70%,
+      rgba(160, 160, 160, 0.8) 100%
+    );
+  border-radius: 2px 2px 0 0;
+  box-shadow: 
+    0 0 8px rgba(0, 0, 0, 0.6),
+    0 2px 4px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  z-index: 6;
+}
+
+/* Second Hand */
+.clean-second-hand {
+  width: 2px;
+  height: 90px;
+  top: calc(50% - 90px);
+  left: calc(50% - 1px);
+  background: 
+    linear-gradient(180deg, 
+      rgba(223, 66, 66, 0.95) 0%, 
+      rgba(170, 36, 36, 0.9) 50%,
+      rgba(111, 23, 23, 0.8) 100%
+    );
+  border-radius: 1px;
+  box-shadow: 
+    0 0 6px rgba(255, 255, 255, 0.4),
+    0 2px 4px rgba(0, 0, 0, 0.5);
+  z-index: 7;
+}
+
+/* Center Dot */
+.clean-center-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: 
+    radial-gradient(circle at center, 
+      rgba(255, 255, 255, 0.95) 0%, 
+      rgba(200, 200, 200, 0.85) 50%,
+      rgba(150, 150, 150, 0.75) 100%
+    );
+  border: 2px solid rgba(180, 180, 180, 0.8);
+  box-shadow: 
+    0 0 15px rgba(255, 255, 255, 0.5),
+    0 3px 6px rgba(0, 0, 0, 0.5),
+    inset 0 1px 2px rgba(255, 255, 255, 0.6);
+  z-index: 10;
+}
+
+/* Digital Display */
+.clean-digital-display {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.clean-digital-time {
+  font-size: 1.8rem;
+  font-weight: 300;
+  color: #ffffff;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  margin-bottom: 0.5rem;
+  letter-spacing: 1px;
+  filter: brightness(1.2) contrast(1.1);
+}
+
+.clean-digital-date {
+  font-size: 0.9rem;
+  color: #ffffff;
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  filter: brightness(1.2) contrast(1.1);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .clean-clock-face {
+    width: 200px;
+    height: 170px;
+  }
+  
+  .clean-hour-marker {
+    transform-origin: center 70px;
+    height: 16px;
+  }
+  
+  .clean-hour-marker.main {
+    height: 24px;
+  }
+  
+  
+  .clean-hour-hand {
+    height: 50px;
+    top: calc(50% - 50px);
+  }
+  
+  .clean-minute-hand {
+    height: 65px;
+    top: calc(50% - 65px);
+  }
+  
+  .clean-second-hand {
+    height: 75px;
+    top: calc(50% - 75px);
+  }
+  
+  .clean-digital-time {
+    font-size: 1.6rem;
+  }
+  
+  .clean-digital-date {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .clean-clock-face {
+    width: 180px;
+    height: 150px;
+  }
+  
+  .clean-hour-marker {
+    transform-origin: center 60px;
+    height: 14px;
+  }
+  
+  .clean-hour-marker.main {
+    height: 20px;
+  }
+  
+  .clean-hour-hand {
+    height: 45px;
+    top: calc(50% - 45px);
+  }
+  
+  .clean-minute-hand {
+    height: 60px;
+    top: calc(50% - 60px);
+  }
+  
+  .clean-second-hand {
+    height: 70px;
+    top: calc(50% - 70px);
+  }
+  
+  .clean-digital-time {
+    font-size: 1.4rem;
+  }
+  
+  .clean-digital-date {
+    font-size: 0.75rem;
+  }
+}

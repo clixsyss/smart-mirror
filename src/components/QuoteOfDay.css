@@ -1,0 +1,78 @@
+.quote {
+  text-align: center;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  position: relative;
+}
+
+.quote-text {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+  font-style: italic;
+  color: #ffffff;
+  font-weight: 300;
+  position: relative;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.quote-text::before {
+  content: '"';
+  font-size: 1.5rem;
+  color: rgba(255, 255, 255, 0.3);
+  position: absolute;
+  left: -0.8rem;
+  top: -0.3rem;
+  font-family: serif;
+  font-weight: 100;
+}
+
+.quote-text::after {
+  content: '"';
+  font-size: 1.5rem;
+  color: rgba(255, 255, 255, 0.3);
+  position: absolute;
+  right: -0.8rem;
+  bottom: -0.3rem;
+  font-family: serif;
+  font-weight: 100;
+}
+
+.quote-author {
+  font-size: 0.8rem;
+  color: #ffffff;
+  font-weight: 300;
+  font-style: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.quote-text.custom-message {
+  color: #ffffff;
+  font-weight: 400;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  padding: 1.2rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.quote-text.custom-message::before,
+.quote-text.custom-message::after {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .quote-text {
+    font-size: 1rem;
+  }
+  
+  .quote-author {
+    font-size: 0.8rem;
+  }
+}
