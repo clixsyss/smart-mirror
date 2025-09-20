@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import './CurtainsControl.css';
 
 const CurtainsControl = ({ data, actions, userId }) => {
@@ -9,7 +9,7 @@ const CurtainsControl = ({ data, actions, userId }) => {
     room.devices?.filter(device => device.type === 'curtains') || []
   );
 
-  const handleCurtainToggle = async (curtainId, action) => {
+  const handleCurtainToggle = useCallback(async (curtainId, action) => {
     if (actions && actions.updateSmartHomeDevice) {
       try {
         await actions.updateSmartHomeDevice(userId, curtainId, { action });
@@ -17,9 +17,9 @@ const CurtainsControl = ({ data, actions, userId }) => {
         console.error('Error controlling curtain:', error);
       }
     }
-  };
+  }, [actions, userId]);
 
-  const handleCurtainPosition = async (curtainId, position) => {
+  const handleCurtainPosition = useCallback(async (curtainId, position) => {
     if (actions && actions.updateSmartHomeDevice) {
       try {
         await actions.updateSmartHomeDevice(userId, curtainId, { position });
@@ -27,13 +27,20 @@ const CurtainsControl = ({ data, actions, userId }) => {
         console.error('Error setting curtain position:', error);
       }
     }
-  };
+  }, [actions, userId]);
 
   const filteredCurtains = selectedRoom === 'all' 
     ? curtains 
     : curtains.filter(curtain => curtain.room === selectedRoom);
 
   const uniqueRooms = [...new Set(curtains.map(curtain => curtain.room))];
+
+  // Function to toggle curtain state (open/close)
+  const toggleCurtain = useCallback(async (curtainId, currentPosition) => {
+    // Toggle between open (100) and closed (0)
+    const newPosition = currentPosition > 50 ? 0 : 100; // If more than half open, close it; otherwise open it
+    await handleCurtainPosition(curtainId, newPosition);
+  }, [handleCurtainPosition]);
 
   return (
     <div className="curtains-control">
@@ -61,7 +68,16 @@ const CurtainsControl = ({ data, actions, userId }) => {
           </div>
         ) : (
           filteredCurtains.map(curtain => (
-            <div key={curtain.id} className="curtain-card">
+            <div 
+              key={curtain.id} 
+              className={`curtain-card ${curtain.position > 50 ? 'open' : ''}`}
+              onClick={(e) => {
+                // Only toggle if clicking on the card itself, not on interactive elements
+                if (e.target === e.currentTarget) {
+                  toggleCurtain(curtain.id, curtain.position || 0);
+                }
+              }}
+            >
               <div className="curtain-header">
                 <h3>{curtain.name}</h3>
                 <span className="curtain-room">{curtain.room}</span>
@@ -82,21 +98,30 @@ const CurtainsControl = ({ data, actions, userId }) => {
               <div className="curtain-controls">
                 <button 
                   className="control-btn open-btn"
-                  onClick={() => handleCurtainToggle(curtain.id, 'open')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCurtainToggle(curtain.id, 'open');
+                  }}
                 >
                   Open
                 </button>
                 
                 <button 
                   className="control-btn close-btn"
-                  onClick={() => handleCurtainToggle(curtain.id, 'close')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCurtainToggle(curtain.id, 'close');
+                  }}
                 >
                   Close
                 </button>
                 
                 <button 
                   className="control-btn stop-btn"
-                  onClick={() => handleCurtainToggle(curtain.id, 'stop')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCurtainToggle(curtain.id, 'stop');
+                  }}
                 >
                   Stop
                 </button>
@@ -108,7 +133,10 @@ const CurtainsControl = ({ data, actions, userId }) => {
                   min="0"
                   max="100"
                   value={curtain.position || 0}
-                  onChange={(e) => handleCurtainPosition(curtain.id, parseInt(e.target.value))}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    handleCurtainPosition(curtain.id, parseInt(e.target.value));
+                  }}
                   className="slider"
                 />
                 <div className="slider-labels">

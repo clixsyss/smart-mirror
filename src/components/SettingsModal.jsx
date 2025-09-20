@@ -730,6 +730,7 @@ const SettingsModal = ({ onClose, state, actions, logout, onInteraction }) => {
                   rows="3"
                   maxLength="200"
                 />
+                
                 <div className="custom-message-controls">
                   <div className="location-hint">
                     {(settings.customMessage || '').length}/200 characters

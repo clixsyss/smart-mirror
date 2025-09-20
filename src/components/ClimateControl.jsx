@@ -1,42 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import './ClimateControl.css';
 
 const ClimateControl = ({ data, actions, userId }) => {
   const [animatingDevices, setAnimatingDevices] = useState(new Set());
   
-  const { rooms = [], loading, error } = data || {};
-
-  // Debug: Log the rooms and devices data
-  React.useEffect(() => {
-    if (rooms.length > 0) {
-      console.log('ClimateControl - Rooms data:', rooms);
-      
-      // Collect all unique device types
-      const allDeviceTypes = new Set();
-      rooms.forEach(room => {
-        console.log(`Room: ${room.name}`, room.devices);
-        if (room.devices) {
-          // Log all device types to see what we're working with
-          room.devices.forEach(device => {
-            console.log(`Device: ${device.name}, Type: ${device.type}, State: ${device.state}`);
-            allDeviceTypes.add(device.type);
-          });
-          
-          // More flexible filtering for climate devices
-          const climateDevices = room.devices.filter(d => {
-            const deviceType = (d.type || '').toLowerCase();
-            return ['thermostat', 'air_conditioner', 'ac', 'aircon', 'air conditioner', 'air-conditioning'].includes(deviceType);
-          }) || [];
-          console.log(`Climate devices in ${room.name}:`, climateDevices);
-        }
-      });
-      
-      console.log('All device types in the system:', Array.from(allDeviceTypes));
-    }
-  }, [rooms]);
+  const { rooms = [] } = data || {};
 
   // More flexible function to check if a device is a climate device
-  const isClimateDevice = (device) => {
+  const isClimateDevice = useCallback((device) => {
     const deviceType = (device.type || '').toLowerCase();
     // More comprehensive list of air conditioning device type identifiers
     return [
@@ -52,10 +23,10 @@ const ClimateControl = ({ data, actions, userId }) => {
     (device.name || '').toLowerCase().includes('ac') ||
     (device.name || '').toLowerCase().includes('air conditioner') ||
     (device.name || '').toLowerCase().includes('air conditioning');
-  };
+  }, []);
 
   // More flexible function to check if a device has temperature control
-  const hasTemperatureControl = (device) => {
+  const hasTemperatureControl = useCallback((device) => {
     const deviceType = (device.type || '').toLowerCase();
     return [
       'thermostat', 
@@ -70,9 +41,9 @@ const ClimateControl = ({ data, actions, userId }) => {
     (device.name || '').toLowerCase().includes('ac') ||
     (device.name || '').toLowerCase().includes('air conditioner') ||
     (device.name || '').toLowerCase().includes('air conditioning');
-  };
+  }, []);
 
-  const toggleRoomClimate = async (roomId) => {
+  const toggleRoomClimate = useCallback(async (roomId) => {
     const room = rooms.find(r => r.id === roomId);
     if (!room) return;
 
@@ -82,8 +53,9 @@ const ClimateControl = ({ data, actions, userId }) => {
     if (climateDevices.length === 0) return;
 
     // Determine if we should turn all climate devices on or off
-    const allDevicesOn = climateDevices.every(device => device.state);
-    const newState = !allDevicesOn;
+    // Using "some" instead of "every" to handle mixed states better
+    const anyDevicesOn = climateDevices.some(device => device.state);
+    const newState = !anyDevicesOn; // Toggle based on whether any device is on
 
     try {
       // Update all climate devices in the room
@@ -93,9 +65,9 @@ const ClimateControl = ({ data, actions, userId }) => {
     } catch (error) {
       console.error('Error toggling room climate:', error);
     }
-  };
+  }, [rooms, isClimateDevice, actions, userId]);
 
-  const toggleDevice = async (roomId, deviceId, currentState) => {
+  const toggleDevice = useCallback(async (roomId, deviceId, currentState) => {
     const newState = !currentState;
     setAnimatingDevices(prev => new Set([...prev, deviceId]));
     
@@ -110,42 +82,27 @@ const ClimateControl = ({ data, actions, userId }) => {
           newSet.delete(deviceId);
           return newSet;
         });
-      }, 500);
+      }, 300); // Reduced timeout for smoother experience
     }
-  };
+  }, [actions, userId]);
 
-  const updateTemperature = async (roomId, deviceId, temperature) => {
+  const updateTemperature = useCallback(async (roomId, deviceId, temperature) => {
     try {
       await actions.setClimateTemperature(userId, roomId, deviceId, temperature);
     } catch (error) {
       console.error('Error updating temperature:', error);
     }
-  };
+  }, [actions, userId]);
 
-  const updateMode = async (roomId, deviceId, mode) => {
+  const updateMode = useCallback(async (roomId, deviceId, mode) => {
     try {
       await actions.setClimateMode(userId, roomId, deviceId, mode);
     } catch (error) {
       console.error('Error updating mode:', error);
     }
-  };
+  }, [actions, userId]);
 
-  if (loading) {
-    return (
-      <div className="climate-control">
-        <div className="loading">Loading climate controls...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="climate-control">
-        <div className="error">Error loading climate controls: {error}</div>
-      </div>
-    );
-  }
-
+  // Always render the UI without loading or error states
   if (rooms.length === 0) {
     return (
       <div className="climate-control">
@@ -160,19 +117,28 @@ const ClimateControl = ({ data, actions, userId }) => {
         {rooms.map((room, roomIndex) => {
           // Only include thermostats and air conditioners (not fans)
           const climateDevices = room.devices?.filter(isClimateDevice) || [];
-          
-          // Debug: Log the filtered devices
-          console.log(`Rendering room ${room.name} with ${climateDevices.length} climate devices`);
-
-          const allDevicesOn = climateDevices.length > 0 && climateDevices.every(device => device.state);
+          // Using "some" instead of "every" to handle mixed states better
+          const anyDevicesOn = climateDevices.length > 0 && climateDevices.some(device => device.state);
 
           return (
-            <div key={room.id || `room-${roomIndex}`} className="room-card">
+            <div 
+              key={room.id || `room-${roomIndex}`} 
+              className={`room-card ${anyDevicesOn ? 'climate-on' : ''}`}
+              onClick={(e) => {
+                // Only toggle if clicking on the card itself, not on interactive elements
+                if (e.target === e.currentTarget) {
+                  toggleRoomClimate(room.id);
+                }
+              }}
+            >
               <div className="room-header">
                 <h3 className="room-name">{room.name}</h3>
                 <button
-                  className={`room-toggle ${allDevicesOn ? 'active' : ''}`}
-                  onClick={() => toggleRoomClimate(room.id)}
+                  className={`room-toggle ${anyDevicesOn ? 'active' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleRoomClimate(room.id);
+                  }}
                 >
                 </button>
               </div>
@@ -188,7 +154,10 @@ const ClimateControl = ({ data, actions, userId }) => {
                     <div className="device-controls">
                       <button
                         className={`device-toggle ${device.state ? 'active' : ''}`}
-                        onClick={() => toggleDevice(room.id, device.id, device.state)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleDevice(room.id, device.id, device.state);
+                        }}
                         disabled={animatingDevices.has(device.id)}
                       >
                       </button>
@@ -201,7 +170,10 @@ const ClimateControl = ({ data, actions, userId }) => {
                             min="16"
                             max="30"
                             value={device.temperature || 22}
-                            onChange={(e) => updateTemperature(room.id, device.id, parseInt(e.target.value))}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              updateTemperature(room.id, device.id, parseInt(e.target.value));
+                            }}
                             className="temperature-slider"
                             disabled={!device.state}
                           />
@@ -214,7 +186,10 @@ const ClimateControl = ({ data, actions, userId }) => {
                             <button
                               key={mode}
                               className={`mode-btn ${device.mode === mode ? 'active' : ''}`}
-                              onClick={() => updateMode(room.id, device.id, mode)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                updateMode(room.id, device.id, mode);
+                              }}
                               disabled={!device.state}
                             >
                               {mode}
@@ -225,16 +200,6 @@ const ClimateControl = ({ data, actions, userId }) => {
                     </div>
                   </div>
                 ))}
-                
-                {/* Debug: Show message if no climate devices found */}
-                {climateDevices.length === 0 && room.devices && room.devices.length > 0 && (
-                  <div className="no-devices-message">
-                    No climate devices found in this room. 
-                    Total devices: {room.devices.length}
-                    <br />
-                    Device types in this room: {room.devices.map(d => d.type).join(', ')}
-                  </div>
-                )}
               </div>
             </div>
           );

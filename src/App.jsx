@@ -94,7 +94,7 @@ const RotateIcon = () => (
 )
 
 function SmartMirror() {
-  const [activePanel, setActivePanel] = useState(null) // 'lights', 'climate', 'fans', 'assistant', 'settings', or null
+  const [activePanel, setActivePanel] = useState(null) // 'lights', 'climate', 'fans', 'assistant', or null
   const [showControls, setShowControls] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showServices, setShowServices] = useState(false)
@@ -186,7 +186,7 @@ function SmartMirror() {
   }
 
   const handleScreenRotation = () => {
-    const nextRotation = (screenRotation + 90) % 360
+    const nextRotation = (screenRotation + 180) % 360
     setScreenRotation(nextRotation)
     // Save rotation preference
     localStorage.setItem('screenRotation', nextRotation.toString())

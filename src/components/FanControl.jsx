@@ -1,53 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import './FanControl.css';
 
 const FanControl = ({ data, actions, userId }) => {
   const [animatingDevices, setAnimatingDevices] = useState(new Set());
   
-  const { rooms = [], loading, error } = data || {};
-
-  // Debug: Log the rooms and devices data
-  React.useEffect(() => {
-    if (rooms.length > 0) {
-      console.log('FanControl - Rooms data:', rooms);
-      
-      // Collect all unique device types
-      const allDeviceTypes = new Set();
-      rooms.forEach(room => {
-        console.log(`Room: ${room.name}`, room.devices);
-        if (room.devices) {
-          // Log all device types to see what we're working with
-          room.devices.forEach(device => {
-            console.log(`Device: ${device.name}, Type: ${device.type}, State: ${device.state}`);
-            allDeviceTypes.add(device.type);
-          });
-          
-          // More flexible filtering for fan devices (exclude climate devices)
-          const fanDevices = room.devices.filter(d => {
-            const deviceType = (d.type || '').toLowerCase();
-            // Include fan devices but exclude climate devices
-            const isFan = ['fan', 'ceiling fan', 'exhaust fan'].includes(deviceType);
-            const isClimate = ['thermostat', 'air_conditioner', 'ac', 'aircon', 'air conditioner', 'air-conditioning'].includes(deviceType);
-            return isFan && !isClimate;
-          }) || [];
-          console.log(`Fan devices in ${room.name}:`, fanDevices);
-        }
-      });
-      
-      console.log('All device types in the system:', Array.from(allDeviceTypes));
-    }
-  }, [rooms]);
+  const { rooms = [] } = data || {};
 
   // More flexible function to check if a device is a fan (and not a climate device)
-  const isFanDevice = (device) => {
+  const isFanDevice = useCallback((device) => {
     const deviceType = (device.type || '').toLowerCase();
     // Include fan devices but exclude climate devices
     const isFan = ['fan', 'ceiling fan', 'exhaust fan'].includes(deviceType);
     const isClimate = ['thermostat', 'air_conditioner', 'ac', 'aircon', 'air conditioner', 'air-conditioning'].includes(deviceType);
     return isFan && !isClimate;
-  };
+  }, []);
 
-  const toggleRoomFans = async (roomId) => {
+  const toggleRoomFans = useCallback(async (roomId) => {
     const room = rooms.find(r => r.id === roomId);
     if (!room) return;
 
@@ -56,8 +24,9 @@ const FanControl = ({ data, actions, userId }) => {
     if (fanDevices.length === 0) return;
 
     // Determine if we should turn all fan devices on or off
-    const allDevicesOn = fanDevices.every(device => device.state);
-    const newState = !allDevicesOn;
+    // Using "some" instead of "every" to handle mixed states better
+    const anyDevicesOn = fanDevices.some(device => device.state);
+    const newState = !anyDevicesOn; // Toggle based on whether any fan is on
 
     try {
       // Update all fan devices in the room
@@ -67,9 +36,9 @@ const FanControl = ({ data, actions, userId }) => {
     } catch (error) {
       console.error('Error toggling room fans:', error);
     }
-  };
+  }, [rooms, isFanDevice, actions, userId]);
 
-  const toggleDevice = async (roomId, deviceId, currentState) => {
+  const toggleDevice = useCallback(async (roomId, deviceId, currentState) => {
     const newState = !currentState;
     setAnimatingDevices(prev => new Set([...prev, deviceId]));
     
@@ -84,34 +53,19 @@ const FanControl = ({ data, actions, userId }) => {
           newSet.delete(deviceId);
           return newSet;
         });
-      }, 500);
+      }, 300); // Reduced timeout for smoother experience
     }
-  };
+  }, [actions, userId]);
 
-  const updateSpeed = async (roomId, deviceId, speed) => {
+  const updateSpeed = useCallback(async (roomId, deviceId, speed) => {
     try {
       await actions.setFanSpeed(userId, roomId, deviceId, speed);
     } catch (error) {
       console.error('Error updating fan speed:', error);
     }
-  };
+  }, [actions, userId]);
 
-  if (loading) {
-    return (
-      <div className="fan-control">
-        <div className="loading">Loading fan controls...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="fan-control">
-        <div className="error">Error loading fan controls: {error}</div>
-      </div>
-    );
-  }
-
+  // Always render the UI without loading or error states
   if (rooms.length === 0) {
     return (
       <div className="fan-control">
@@ -125,19 +79,28 @@ const FanControl = ({ data, actions, userId }) => {
       <div className="rooms-grid">
         {rooms.map((room, roomIndex) => {
           const fanDevices = room.devices?.filter(isFanDevice) || [];
-          
-          // Debug: Log the filtered devices
-          console.log(`Rendering room ${room.name} with ${fanDevices.length} fan devices`);
-
-          const allDevicesOn = fanDevices.length > 0 && fanDevices.every(device => device.state);
+          // Using "some" instead of "every" to handle mixed states better
+          const anyDevicesOn = fanDevices.length > 0 && fanDevices.some(device => device.state);
 
           return (
-            <div key={room.id || `room-${roomIndex}`} className="room-card">
+            <div 
+              key={room.id || `room-${roomIndex}`} 
+              className={`room-card ${anyDevicesOn ? 'fan-on' : ''}`}
+              onClick={(e) => {
+                // Only toggle if clicking on the card itself, not on interactive elements
+                if (e.target === e.currentTarget) {
+                  toggleRoomFans(room.id);
+                }
+              }}
+            >
               <div className="room-header">
                 <h3 className="room-name">{room.name}</h3>
                 <button
-                  className={`room-toggle ${allDevicesOn ? 'active' : ''}`}
-                  onClick={() => toggleRoomFans(room.id)}
+                  className={`room-toggle ${anyDevicesOn ? 'active' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleRoomFans(room.id);
+                  }}
                 >
                 </button>
               </div>
@@ -153,7 +116,10 @@ const FanControl = ({ data, actions, userId }) => {
                     <div className="device-controls">
                       <button
                         className={`device-toggle ${device.state ? 'active' : ''}`}
-                        onClick={() => toggleDevice(room.id, device.id, device.state)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleDevice(room.id, device.id, device.state);
+                        }}
                         disabled={animatingDevices.has(device.id)}
                       >
                       </button>
@@ -166,7 +132,10 @@ const FanControl = ({ data, actions, userId }) => {
                             min="1"
                             max={device.maxSpeed || 5}
                             value={device.speed || 1}
-                            onChange={(e) => updateSpeed(room.id, device.id, parseInt(e.target.value))}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              updateSpeed(room.id, device.id, parseInt(e.target.value));
+                            }}
                             className="speed-slider"
                             disabled={!device.state}
                           />
@@ -175,16 +144,6 @@ const FanControl = ({ data, actions, userId }) => {
                     </div>
                   </div>
                 ))}
-                
-                {/* Debug: Show message if no fan devices found */}
-                {fanDevices.length === 0 && room.devices && room.devices.length > 0 && (
-                  <div className="no-devices-message">
-                    No fan devices found in this room. 
-                    Total devices: {room.devices.length}
-                    <br />
-                    Device types in this room: {room.devices.map(d => d.type).join(', ')}
-                  </div>
-                )}
               </div>
             </div>
           );

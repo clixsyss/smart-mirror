@@ -1,12 +1,12 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import './LightControl.css';
 
 const LightControl = ({ data, actions, userId }) => {
   const [animatingLights, setAnimatingLights] = useState(new Set());
   
-  const { rooms = [], loading, error } = data || {};
+  const { rooms = [] } = data || {};
 
-  const toggleRoomLights = async (roomId) => {
+  const toggleRoomLights = useCallback(async (roomId) => {
     if (!roomId) {
       console.error('❌ Room ID is null or undefined');
       return;
@@ -22,8 +22,9 @@ const LightControl = ({ data, actions, userId }) => {
     if (lightDevices.length === 0) return;
 
     // Determine if we should turn all lights on or off
-    const allLightsOn = lightDevices.every(device => device.state);
-    const newState = !allLightsOn;
+    // Using "some" instead of "every" to handle mixed states better
+    const anyLightsOn = lightDevices.some(device => device.state);
+    const newState = !anyLightsOn; // Toggle based on whether any light is on
 
     try {
       // Update all light devices in the room
@@ -33,7 +34,7 @@ const LightControl = ({ data, actions, userId }) => {
     } catch (error) {
       console.error('Error toggling room lights:', error);
     }
-  };
+  }, [rooms, actions, userId]);
 
   const toggleDevice = useCallback(async (roomId, deviceId, currentState) => {
     if (!roomId) {
@@ -53,17 +54,18 @@ const LightControl = ({ data, actions, userId }) => {
     } catch (error) {
       console.error('Error toggling device:', error);
     } finally {
+      // Remove animation class after a short delay
       setTimeout(() => {
         setAnimatingLights(prev => {
           const newSet = new Set(prev);
           newSet.delete(deviceId);
           return newSet;
         });
-      }, 500);
+      }, 300);
     }
   }, [actions, userId]);
 
-  const updateBrightness = async (roomId, deviceId, brightness) => {
+  const updateBrightness = useCallback(async (roomId, deviceId, brightness) => {
     if (!deviceId) {
       console.error('Device ID is null or undefined');
       return;
@@ -74,24 +76,9 @@ const LightControl = ({ data, actions, userId }) => {
     } catch (error) {
       console.error('Error updating brightness:', error);
     }
-  };
+  }, [actions, userId]);
 
-  if (loading) {
-    return (
-      <div className="light-control">
-        <div className="loading">Loading lights...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="light-control">
-        <div className="error">Error loading lights: {error}</div>
-      </div>
-    );
-  }
-
+  // Always render the UI without loading or error states
   if (rooms.length === 0) {
     return (
       <div className="light-control">
@@ -105,16 +92,28 @@ const LightControl = ({ data, actions, userId }) => {
       <div className="rooms-grid">
         {rooms.map((room, roomIndex) => {
           const lightDevices = room.devices?.filter(d => d.type === 'light') || [];
-          const allLightsOn = lightDevices.length > 0 && lightDevices.every(device => device.state);
-          const someLightsOn = lightDevices.some(device => device.state);
+          // Using "some" instead of "every" to handle mixed states better
+          const anyLightsOn = lightDevices.length > 0 && lightDevices.some(device => device.state);
 
           return (
-            <div key={room.id || `room-${roomIndex}`} className="room-card">
+            <div 
+              key={room.id || `room-${roomIndex}`} 
+              className={`room-card ${anyLightsOn ? 'lights-on' : ''}`}
+              onClick={(e) => {
+                // Only toggle if clicking on the card itself, not on interactive elements
+                if (e.target === e.currentTarget) {
+                  toggleRoomLights(room.id);
+                }
+              }}
+            >
               <div className="room-header">
                 <h3 className="room-name">{room.name}</h3>
                 <button
-                  className={`room-toggle ${allLightsOn ? 'active' : ''}`}
-                  onClick={() => toggleRoomLights(room.id)}
+                  className={`room-toggle ${anyLightsOn ? 'active' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleRoomLights(room.id);
+                  }}
                 >
                 </button>
               </div>
@@ -130,7 +129,10 @@ const LightControl = ({ data, actions, userId }) => {
                     <div className="device-controls">
                       <button
                         className={`device-toggle ${device.state ? 'active' : ''}`}
-                        onClick={() => toggleDevice(room.id, device.id, device.state)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleDevice(room.id, device.id, device.state);
+                        }}
                         disabled={animatingLights.has(device.id)}
                       >
                       </button>
@@ -142,7 +144,10 @@ const LightControl = ({ data, actions, userId }) => {
                             min="0"
                             max="100"
                             value={device.brightness || 0}
-                            onChange={(e) => updateBrightness(room.id, device.id, parseInt(e.target.value))}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              updateBrightness(room.id, device.id, parseInt(e.target.value));
+                            }}
                             className="brightness-slider"
                             disabled={!device.state}
                           />

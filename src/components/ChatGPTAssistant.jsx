@@ -1409,15 +1409,23 @@ Keep responses under 50 words and be conversational. If asked about things outsi
     try {
       // Prefer OpenAI TTS exclusively
       const apiKey = import.meta.env.VITE_OPENAI_API_KEY
+      console.log('🔊 TTS Debug - API Key present:', !!apiKey)
+      console.log('🔊 TTS Debug - Text to speak:', text)
+      console.log('🔊 TTS Debug - Voice settings:', voiceSettings)
+      
       if (!apiKey) {
         console.warn('OpenAI API key missing; cannot use OpenAI TTS')
+        setCurrentResponse('OpenAI API key not configured. Please add VITE_OPENAI_API_KEY to your .env.local file.')
         return
       }
       isSpeaking.current = true
       const voiceName = resolveOpenAIVoiceName(voiceSettings.voiceId)
       const rate = Math.max(0.5, Math.min(2.0, voiceSettings.rate || 1.0))
       const pitch = Math.max(0.5, Math.min(1.5, voiceSettings.pitch || 1.0))
+      
+      console.log('🔊 TTS Debug - Voice name:', voiceName, 'Rate:', rate, 'Pitch:', pitch)
 
+      console.log('🔊 TTS Debug - Making OpenAI API request...')
       const response = await fetch('https://api.openai.com/v1/audio/speech', {
         method: 'POST',
         headers: {
@@ -1433,12 +1441,30 @@ Keep responses under 50 words and be conversational. If asked about things outsi
           // pitch is not universally supported; included as hint via prosody if model honors it
         })
       })
-      if (!response.ok) throw new Error(`OpenAI TTS error: ${response.status}`)
+      
+      console.log('🔊 TTS Debug - API Response status:', response.status)
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('🔊 TTS Debug - API Error:', errorText)
+        throw new Error(`OpenAI TTS error: ${response.status} - ${errorText}`)
+      }
+      
       const arrayBuffer = await response.arrayBuffer()
+      console.log('🔊 TTS Debug - Audio data received, size:', arrayBuffer.byteLength)
       const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' })
       const url = URL.createObjectURL(blob)
       const audio = new Audio(url)
       audio.volume = Math.max(0, Math.min(1, voiceSettings.volume ?? 0.8))
+      
+      console.log('🔊 TTS Debug - Audio volume set to:', audio.volume)
+      console.log('🔊 TTS Debug - Attempting to play audio...')
+      
+      // Add event listeners for debugging
+      audio.addEventListener('loadstart', () => console.log('🔊 TTS Debug - Audio load started'))
+      audio.addEventListener('canplay', () => console.log('🔊 TTS Debug - Audio can play'))
+      audio.addEventListener('play', () => console.log('🔊 TTS Debug - Audio started playing'))
+      audio.addEventListener('error', (e) => console.error('🔊 TTS Debug - Audio error:', e))
+      
       await audio.play()
       audio.onended = () => {
         URL.revokeObjectURL(url)
@@ -1701,6 +1727,13 @@ Keep responses under 50 words and be conversational. If asked about things outsi
           </button>
           <button onClick={() => processVoiceCommand('Turn off lights')} className="quick-cmd">
             Lights Off
+          </button>
+          <button 
+            onClick={() => speak('Hello! This is a test of the voice assistant. Can you hear me?')} 
+            className="quick-cmd"
+            style={{backgroundColor: '#ff6b6b', color: 'white'}}
+          >
+            🔊 Test Voice
           </button>
           <button onClick={() => processVoiceCommand('Goodnight')} className="quick-cmd">
             Goodnight

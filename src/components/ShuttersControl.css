@@ -59,6 +59,7 @@
   box-shadow: 
     0 4px 16px rgba(0, 0, 0, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  cursor: pointer;
 }
 
 .shutter-card:hover {
@@ -67,6 +68,27 @@
   box-shadow: 
     0 8px 24px rgba(0, 0, 0, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.shutter-card.open {
+  background: #004d00;
+  border: 1px solid #00cc00;
+  animation: shutterOpenPulse 2s ease-in-out infinite;
+}
+
+@keyframes shutterOpenPulse {
+  0%, 100% {
+    background: #004d00;
+    box-shadow: 
+      0 8px 24px rgba(0, 204, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    background: #006600;
+    box-shadow: 
+      0 12px 32px rgba(0, 204, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  }
 }
 
 .shutter-header {

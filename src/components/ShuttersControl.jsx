@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import './ShuttersControl.css';
 
 const ShuttersControl = ({ data, actions, userId }) => {
@@ -9,7 +9,7 @@ const ShuttersControl = ({ data, actions, userId }) => {
     room.devices?.filter(device => device.type === 'shutters') || []
   );
 
-  const handleShutterToggle = async (shutterId, action) => {
+  const handleShutterToggle = useCallback(async (shutterId, action) => {
     if (actions && actions.updateSmartHomeDevice) {
       try {
         await actions.updateSmartHomeDevice(userId, shutterId, { action });
@@ -17,9 +17,9 @@ const ShuttersControl = ({ data, actions, userId }) => {
         console.error('Error controlling shutter:', error);
       }
     }
-  };
+  }, [actions, userId]);
 
-  const handleShutterPosition = async (shutterId, position) => {
+  const handleShutterPosition = useCallback(async (shutterId, position) => {
     if (actions && actions.updateSmartHomeDevice) {
       try {
         await actions.updateSmartHomeDevice(userId, shutterId, { position });
@@ -27,13 +27,20 @@ const ShuttersControl = ({ data, actions, userId }) => {
         console.error('Error setting shutter position:', error);
       }
     }
-  };
+  }, [actions, userId]);
 
   const filteredShutters = selectedRoom === 'all' 
     ? shutters 
     : shutters.filter(shutter => shutter.room === selectedRoom);
 
   const uniqueRooms = [...new Set(shutters.map(shutter => shutter.room))];
+
+  // Function to toggle shutter state (open/close)
+  const toggleShutter = useCallback(async (shutterId, currentPosition) => {
+    // Toggle between open (100) and closed (0)
+    const newPosition = currentPosition > 50 ? 0 : 100; // If more than half open, close it; otherwise open it
+    await handleShutterPosition(shutterId, newPosition);
+  }, [handleShutterPosition]);
 
   return (
     <div className="shutters-control">
@@ -61,7 +68,16 @@ const ShuttersControl = ({ data, actions, userId }) => {
           </div>
         ) : (
           filteredShutters.map(shutter => (
-            <div key={shutter.id} className="shutter-card">
+            <div 
+              key={shutter.id} 
+              className={`shutter-card ${shutter.position > 50 ? 'open' : ''}`}
+              onClick={(e) => {
+                // Only toggle if clicking on the card itself, not on interactive elements
+                if (e.target === e.currentTarget) {
+                  toggleShutter(shutter.id, shutter.position || 0);
+                }
+              }}
+            >
               <div className="shutter-header">
                 <h3>{shutter.name}</h3>
                 <span className="shutter-room">{shutter.room}</span>
@@ -82,21 +98,30 @@ const ShuttersControl = ({ data, actions, userId }) => {
               <div className="shutter-controls">
                 <button 
                   className="control-btn open-btn"
-                  onClick={() => handleShutterToggle(shutter.id, 'open')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleShutterToggle(shutter.id, 'open');
+                  }}
                 >
                   Open
                 </button>
                 
                 <button 
                   className="control-btn close-btn"
-                  onClick={() => handleShutterToggle(shutter.id, 'close')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleShutterToggle(shutter.id, 'close');
+                  }}
                 >
                   Close
                 </button>
                 
                 <button 
                   className="control-btn stop-btn"
-                  onClick={() => handleShutterToggle(shutter.id, 'stop')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleShutterToggle(shutter.id, 'stop');
+                  }}
                 >
                   Stop
                 </button>
@@ -108,7 +133,10 @@ const ShuttersControl = ({ data, actions, userId }) => {
                   min="0"
                   max="100"
                   value={shutter.position || 0}
-                  onChange={(e) => handleShutterPosition(shutter.id, parseInt(e.target.value))}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    handleShutterPosition(shutter.id, parseInt(e.target.value));
+                  }}
                   className="slider"
                 />
                 <div className="slider-labels">
