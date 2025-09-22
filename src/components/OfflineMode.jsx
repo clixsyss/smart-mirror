@@ -16,10 +16,29 @@ const OfflineMode = ({ connectionStatus }) => {
 
   // Check for connection restoration
   useEffect(() => {
+    let checkInterval;
+    
+    // If we're online, we shouldn't even be in this component
+    // But just in case, we'll check periodically
     if (online) {
-      // Automatically reload the page when connection is restored
+      // Try to reload immediately
       window.location.reload();
+    } else {
+      // Set up periodic checks to see if we're back online
+      checkInterval = setInterval(() => {
+        // Check if we're back online by testing navigator.onLine
+        if (navigator.onLine) {
+          // Try to reload the page
+          window.location.reload();
+        }
+      }, 3000); // Check every 3 seconds
     }
+
+    return () => {
+      if (checkInterval) {
+        clearInterval(checkInterval);
+      }
+    };
   }, [online]);
 
   const formatTime = () => {

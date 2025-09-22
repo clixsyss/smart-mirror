@@ -209,7 +209,11 @@ function SmartMirror() {
 
   // Show offline mode if no internet connection
   if (!connectivity.isOnline) {
-    return <OfflineMode connectionStatus={connectivity.getConnectionStatus()} />
+    return <OfflineMode connectionStatus={connectivity.getConnectionStatus()} onConnectionRestored={() => {
+      // When connection is restored, we don't need to do anything special
+      // The App component will automatically re-render with connectivity.isOnline = true
+      // and will show the main interface instead of OfflineMode
+    }} />
   }
 
   if (loading) {
