@@ -28,63 +28,33 @@
 }
 
 .rooms-grid {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1.5rem;
   max-height: 100%;
   overflow-y: auto;
 }
 
 .room-card {
-  background: #000000;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #1e1e1e;
+  border: 1px solid #333;
   border-radius: 16px;
   padding: 1.5rem;
-  backdrop-filter: blur(20px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
   cursor: pointer;
-}
-
-.room-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: #000000;
-  pointer-events: none;
-  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .room-card.climate-on {
-  background: #003366;
-  border: 1px solid #0099ff;
-  animation: climateOnPulse 2s ease-in-out infinite;
-}
-
-@keyframes climateOnPulse {
-  0%, 100% {
-    background: #003366;
-    box-shadow: 
-      0 12px 32px rgba(0, 153, 255, 0.2),
-      inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  }
-  50% {
-    background: #004d99;
-    box-shadow: 
-      0 16px 40px rgba(0, 153, 255, 0.3),
-      inset 0 1px 0 rgba(255, 255, 255, 0.15);
-  }
+  background: #1a3a5f;
+  border: 1px solid #2196f3;
 }
 
 .room-card:hover {
   transform: translateY(-2px);
-  box-shadow: 
-    0 12px 32px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
 .room-header {
@@ -105,15 +75,14 @@
 }
 
 .room-toggle {
-  width: 48px;
-  height: 24px;
+  width: 50px;
+  height: 30px;
   border: none;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.1);
+  border-radius: 15px;
+  background: #333;
   position: relative;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .room-toggle::before {
@@ -121,23 +90,19 @@
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 20px;
-  height: 20px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.6);
+  background: #fff;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .room-toggle.active {
-  background: #000000;
-  border-color: rgba(0, 123, 255, 0.8);
+  background: #2196f3;
 }
 
 .room-toggle.active::before {
-  transform: translateX(24px);
-  background: #ffffff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transform: translateX(20px);
 }
 
 .devices-list {
@@ -153,15 +118,14 @@
   align-items: center;
   justify-content: space-between;
   padding: 1rem;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: #2d2d2d;
+  border: 1px solid #444;
   border-radius: 12px;
   transition: all 0.2s ease;
 }
 
 .device-item:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.08);
+  background: #3a3a3a;
   transform: translateX(4px);
 }
 
@@ -179,7 +143,7 @@
 
 .device-type {
   font-size: 0.8rem;
-  color: #ffffff;
+  color: #aaa;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-weight: 300;
@@ -193,15 +157,14 @@
 }
 
 .device-toggle {
-  width: 40px;
-  height: 20px;
+  width: 50px;
+  height: 30px;
   border: none;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.1);
+  border-radius: 15px;
+  background: #333;
   position: relative;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .device-toggle::before {
@@ -209,23 +172,19 @@
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 16px;
-  height: 16px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.6);
+  background: #fff;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .device-toggle.active {
-  background: #000000;
-  border-color: rgba(0, 123, 255, 0.8);
+  background: #2196f3;
 }
 
 .device-toggle.active::before {
   transform: translateX(20px);
-  background: #ffffff;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
 }
 
 .device-toggle:disabled {
@@ -253,7 +212,7 @@
   width: 100px;
   height: 4px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.1);
+  background: #444;
   outline: none;
   cursor: pointer;
   -webkit-appearance: none;
@@ -266,9 +225,9 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #000000;
+  background: #2196f3;
   cursor: pointer;
-  border: 2px solid #ffffff;
+  border: 2px solid #fff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   transition: all 0.2s ease;
 }
@@ -282,9 +241,9 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #000000;
+  background: #2196f3;
   cursor: pointer;
-  border: 2px solid #ffffff;
+  border: 2px solid #fff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
@@ -301,9 +260,9 @@
 
 .mode-btn {
   padding: 0.5rem 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid #444;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
+  background: #333;
   color: #ffffff;
   font-size: 0.8rem;
   font-weight: 400;
@@ -313,14 +272,14 @@
 }
 
 .mode-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: #444;
+  border-color: #555;
   color: #ffffff;
 }
 
 .mode-btn.active {
-  background: #000000;
-  border-color: rgba(0, 123, 255, 0.5);
+  background: #2196f3;
+  border-color: #1976d2;
   color: #ffffff;
   font-weight: 500;
 }
@@ -355,5 +314,9 @@
   .mode-selector {
     width: 100%;
     justify-content: center;
+  }
+  
+  .rooms-grid {
+    grid-template-columns: 1fr;
   }
 }

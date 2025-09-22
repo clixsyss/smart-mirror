@@ -125,8 +125,12 @@ const ClimateControl = ({ data, actions, userId }) => {
               key={room.id || `room-${roomIndex}`} 
               className={`room-card ${anyDevicesOn ? 'climate-on' : ''}`}
               onClick={(e) => {
-                // Only toggle if clicking on the card itself, not on interactive elements
-                if (e.target === e.currentTarget) {
+                // Simplified click handling - always toggle when clicking the card
+                // Check if we're not clicking on an interactive element
+                if (!e.target.closest('.device-toggle') && 
+                    !e.target.closest('.temperature-slider') && 
+                    !e.target.closest('.temperature-display') &&
+                    !e.target.closest('.mode-btn')) {
                   toggleRoomClimate(room.id);
                 }
               }}

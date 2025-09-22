@@ -95,7 +95,6 @@ const RotateIcon = () => (
 
 function SmartMirror() {
   const [activePanel, setActivePanel] = useState(null) // 'lights', 'climate', 'fans', 'assistant', or null
-  const [showControls, setShowControls] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showServices, setShowServices] = useState(false)
   const [modalTimeout, setModalTimeout] = useState(null)
@@ -104,6 +103,7 @@ function SmartMirror() {
     const saved = localStorage.getItem('screenRotation')
     return saved ? parseInt(saved) : 0
   }) // 0, 90, 180, 270 degrees
+  const [isLocked, setIsLocked] = useState(false) // Lock feature state
   const { user, userProfile, loading, logout } = useAuth()
   const { state, actions } = useGlobalStore()
   const connectivity = useConnectivity()
@@ -117,7 +117,6 @@ function SmartMirror() {
       actions.reset()
       // Also clear local component state
       setActivePanel(null)
-      setShowControls(false)
       setShowSettings(false)
       if (modalTimeout) {
         clearTimeout(modalTimeout)
@@ -130,10 +129,9 @@ function SmartMirror() {
     let hideTimeout
 
     const handleUserActivity = () => {
-      setShowControls(true)
+      if (isLocked) return; // Prevent action if locked
       clearTimeout(hideTimeout)
       hideTimeout = setTimeout(() => {
-        setShowControls(false)
         // Don't auto-close panels - only hide the control buttons
         // Panels will stay open until manually closed
       }, 10000) // Hide control buttons after 10 seconds
@@ -148,7 +146,7 @@ function SmartMirror() {
       clearTimeout(hideTimeout)
       clearModalTimeout() // Clean up modal timeout
     }
-  }, [])
+  }, [isLocked]) // Add isLocked as dependency
 
   const clearModalTimeout = () => {
     if (modalTimeout) {
@@ -158,38 +156,50 @@ function SmartMirror() {
   }
 
   const openPanel = (panel) => {
+    if (isLocked) return; // Prevent action if locked
     setActivePanel(panel)
     // Removed automatic timeout - panel stays open until manually closed
   }
 
   const closePanel = () => {
+    if (isLocked) return; // Prevent action if locked
     setActivePanel(null)
     clearModalTimeout()
   }
 
   const openSettings = () => {
+    if (isLocked) return; // Prevent action if locked
     setShowSettings(true)
     // Removed automatic timeout - settings stay open until manually closed
   }
 
   const closeSettings = () => {
+    if (isLocked) return; // Prevent action if locked
     setShowSettings(false)
     clearModalTimeout()
   }
 
   const openServices = () => {
+    if (isLocked) return; // Prevent action if locked
     setShowServices(true)
   }
 
   const closeServices = () => {
+    if (isLocked) return; // Prevent action if locked
     setShowServices(false)
   }
 
   const handleScreenRotation = () => {
+    if (isLocked) return; // Prevent action if locked
     const nextRotation = (screenRotation + 180) % 360
     setScreenRotation(nextRotation)
     // Save rotation preference
     localStorage.setItem('screenRotation', nextRotation.toString())
+  }
+
+  // Toggle lock state
+  const toggleLock = () => {
+    setIsLocked(!isLocked);
   }
 
   const handleModalInteraction = () => {
@@ -258,7 +268,7 @@ function SmartMirror() {
 
   return (
     <div 
-      className="smart-mirror" 
+      className={`smart-mirror ${isLocked ? 'locked' : ''}`} 
       style={{ 
         transform: `rotate(${screenRotation}deg)`,
         transition: 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)'
@@ -307,7 +317,8 @@ function SmartMirror() {
       </div>
 
       {/* Control Dock - Bottom */}
-      {/* <div className={`control-dock ${showControls ? 'visible' : ''}`}>
+      {/*
+      <div className={`control-dock ${showControls ? 'visible' : ''}`}>
         {state.settings?.showLights !== false && (
           <button 
             className="control-btn lights-btn"
@@ -319,7 +330,7 @@ function SmartMirror() {
             </div>
           </button>
         )}
-        
+      
         {state.settings?.showClimate !== false && (
           <button 
             className="control-btn climate-btn"
@@ -331,7 +342,7 @@ function SmartMirror() {
             </div>
           </button>
         )}
-        
+      
         {state.settings?.showClimate !== false && (
           <button 
             className="control-btn fans-btn"
@@ -343,7 +354,7 @@ function SmartMirror() {
             </div>
           </button>
         )}
-        
+      
         {state.settings?.showAssistant !== false && (
           <button 
             className="control-btn assistant-btn"
@@ -355,7 +366,7 @@ function SmartMirror() {
             </div>
           </button>
         )}
-        
+      
         <button 
           className="control-btn logout-btn"
           onClick={logout}
@@ -365,7 +376,8 @@ function SmartMirror() {
             <LogoutIcon />
           </div>
         </button>
-      </div> */}
+      </div>
+      */}
 
       {/* Beautiful Modal Panels */}
       {activePanel === 'lights' && (
@@ -495,6 +507,26 @@ function SmartMirror() {
         title={`Rotate Screen (Currently ${screenRotation}°)`}
       >
         <RotateIcon />
+      </button>
+
+      {/* Lock Button - Next to Rotation Button */}
+      <button 
+        className={`lock-btn ${isLocked ? 'locked' : 'unlocked'}`}
+        onClick={toggleLock}
+        title={isLocked ? "Unlock Interface" : "Lock Interface"}
+      >
+        {isLocked ? (
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+        ) : (
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            <path d="M12 11v4"/>
+          </svg>
+        )}
       </button>
 
       {/* Settings Button - Bottom Right */}
