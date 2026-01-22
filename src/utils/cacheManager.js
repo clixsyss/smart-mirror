@@ -51,7 +51,16 @@ export const cacheManager = {
       this.set(key, freshData);
       return freshData;
     } catch (error) {
-      console.warn(`Failed to fetch fresh data for ${key}, using cache:`, error);
+      // Only log warnings for non-expected errors (not SSL/certificate issues)
+      const isExpectedError = error.message?.includes('CERT') || 
+                              error.message?.includes('certificate') || 
+                              error.message?.includes('Failed to fetch') ||
+                              error.message?.includes('ERR_CERT');
+      
+      if (!isExpectedError) {
+        console.warn(`Failed to fetch fresh data for ${key}, using cache:`, error);
+      }
+      
       // Fallback to cached data
       const cachedData = this.get(key);
       if (cachedData && !this.isExpired(key, maxAge)) {

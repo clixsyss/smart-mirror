@@ -347,24 +347,44 @@ class GlobalStore {
   async fetchQuote() {
     this.updateSection('quote', { loading: true, error: null });
     
+    // Fallback quotes used if API fails or returns invalid data
+    const fallbackQuotes = [
+      { content: "The best time to plant a tree was 20 years ago. The second best time is now.", author: "Chinese Proverb" },
+      { content: "Innovation distinguishes between a leader and a follower.", author: "Steve Jobs" },
+      { content: "The future belongs to those who believe in the beauty of their dreams.", author: "Eleanor Roosevelt" },
+      { content: "Success is not final, failure is not fatal: it is the courage to continue that counts.", author: "Winston Churchill" },
+      { content: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
+      { content: "Technology is nothing. What's important is that you have a faith in people, that they're basically good and smart.", author: "Steve Jobs" },
+      { content: "The way to get started is to quit talking and begin doing.", author: "Walt Disney" },
+      { content: "Life is what happens to you while you're busy making other plans.", author: "John Lennon" }
+    ];
+    
     try {
       const quoteData = await cacheManager.fetchWithCache('quote', async () => {
-        const response = await fetch('https://api.quotable.io/random?minLength=50&maxLength=150');
-        
-        if (!response.ok) {
-          throw new Error(`Quote API error: ${response.status}`);
+        try {
+          const response = await fetch('https://api.quotable.io/random?minLength=50&maxLength=150');
+          
+          if (!response.ok) {
+            throw new Error(`Quote API error: ${response.status}`);
+          }
+          
+          const data = await response.json();
+          return {
+            content: data.content,
+            author: data.author,
+            tags: data.tags
+          };
+        } catch (fetchError) {
+          // Silently handle SSL/certificate errors - they're expected when API is down
+          if (fetchError.message.includes('CERT') || fetchError.message.includes('certificate') || fetchError.message.includes('Failed to fetch')) {
+            return null; // Return null to trigger fallback
+          }
+          throw fetchError;
         }
-        
-        const data = await response.json();
-        return {
-          content: data.content,
-          author: data.author,
-          tags: data.tags
-        };
       });
       
-      // Check if quoteData is valid before using it
       if (quoteData && quoteData.content && quoteData.author) {
+        // Valid data from API or cache
         this.updateSection('quote', {
           content: quoteData.content,
           author: quoteData.author,
@@ -372,22 +392,17 @@ class GlobalStore {
           lastUpdated: Date.now()
         });
       } else {
-        throw new Error('Invalid quote data received');
+        // No valid quote available – use a random local fallback silently
+        const randomQuote = fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)];
+        this.updateSection('quote', {
+          content: randomQuote.content,
+          author: randomQuote.author,
+          loading: false,
+          lastUpdated: Date.now()
+        });
       }
     } catch (error) {
-      console.error('Quote fetch error:', error);
-      // Fallback to inspirational quotes
-      const fallbackQuotes = [
-        { content: "The best time to plant a tree was 20 years ago. The second best time is now.", author: "Chinese Proverb" },
-        { content: "Innovation distinguishes between a leader and a follower.", author: "Steve Jobs" },
-        { content: "The future belongs to those who believe in the beauty of their dreams.", author: "Eleanor Roosevelt" },
-        { content: "Success is not final, failure is not fatal: it is the courage to continue that counts.", author: "Winston Churchill" },
-        { content: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
-        { content: "Technology is nothing. What's important is that you have a faith in people, that they're basically good and smart.", author: "Steve Jobs" },
-        { content: "The way to get started is to quit talking and begin doing.", author: "Walt Disney" },
-        { content: "Life is what happens to you while you're busy making other plans.", author: "John Lennon" }
-      ];
-      
+      // Silently use fallback quote on any error - no need to log expected failures
       const randomQuote = fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)];
       this.updateSection('quote', {
         content: randomQuote.content,

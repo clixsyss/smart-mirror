@@ -636,10 +636,11 @@ const ChatGPTAssistant = ({ userId, userProfile, onOpenSettings }) => {
   // Enhanced ChatGPT API integration for natural language understanding
   const callChatGPT = async (message) => {
     const apiKey = import.meta.env.VITE_OPENAI_API_KEY
+    const openAIDisabled = import.meta.env.VITE_DISABLE_OPENAI === 'true'
     
-    if (!apiKey) {
-      console.warn('OpenAI API key not configured')
-      return "I'd love to help, but I need an OpenAI API key to understand complex requests. For now, I can help with basic smart home commands like 'turn on lights' or 'good morning'."
+    if (openAIDisabled || !apiKey) {
+      // OpenAI is disabled or not configured - use local command processing only
+      return null // Return null to trigger local command processing
     }
 
     // Create a new AbortController for this request
@@ -648,110 +649,17 @@ const ChatGPTAssistant = ({ userId, userProfile, onOpenSettings }) => {
     try {
       console.log('Calling ChatGPT with message:', message)
       
-      // Build context about the smart home and current state
-      const smartHomeContext = state?.smartHome ? `
-Smart Home Status:
-- Rooms: ${state.smartHome.rooms?.map(room => room.name).join(', ') || 'None configured'}
-- Available devices: lights, climate control, fans, shutters, curtains
-- Current time: ${new Date().toLocaleString()}
-` : 'No smart home devices configured.'
+      // Build concise context (only essential info for speed)
+      const rooms = state?.smartHome?.rooms?.map(room => room.name).join(', ') || 'None'
+      const userName = userProfile?.preferredName || userProfile?.name || 'User'
+      const weather = state?.weather?.current ? `${state.weather.current.description}, ${state.weather.current.temperature}°C` : ''
 
-      const weatherContext = state?.weather ? `
-Weather: ${state.weather.current?.description || 'Unknown'}, ${state.weather.current?.temperature || 'Unknown'}°C
-` : ''
+      // Simplified, concise system prompt for faster processing
+      const systemPrompt = `Smart home assistant. User: ${userName}. Rooms: ${rooms}. ${weather ? `Weather: ${weather}.` : ''} Control devices (lights, climate, fans, shutters, curtains). Keep responses under 30 words. Be friendly and concise.`
 
-      // Create personalized context based on user profile
-      let userContext = ''
-      if (userProfile) {
-        userContext = `
-User Profile Information:
-- Name: ${userProfile.name || 'User'}
-- Preferred Name: ${userProfile.preferredName || userProfile.name || 'User'}
-- Role: ${userProfile.role || 'user'}
-`
-        // Add personalized greeting based on user preferences
-        if (userProfile.preferences?.greeting) {
-          userContext += `- Preferred Greeting: ${userProfile.preferences.greeting}\n`
-        }
-        
-        // Add any special notes about the user
-        if (userProfile.notes) {
-          userContext += `- Notes: ${userProfile.notes}\n`
-        }
-      } else {
-        userContext = 'User Profile: Basic user account\n'
-      }
-
-      // Create conversation history context
-      let conversationContext = ''
-      if (conversationHistory.length > 0) {
-        conversationContext = `
-Recent Conversation History:
-${conversationHistory.map((entry, index) => `${index + 1}. ${entry.role}: ${entry.content}`).join('\n')}
-`
-      }
-
-      const systemPrompt = `You are an advanced smart home assistant for a smart mirror. Be helpful, concise, and friendly.
-
-${userContext}
-${smartHomeContext}
-${weatherContext}
-${conversationContext}
-
-You can control smart home devices by suggesting actions. For device control, respond with natural language that includes clear device commands like:
-- "I'll turn on the lights in the living room" (for light control)
-- "Setting temperature to 24°C in the bedroom" (for climate control)  
-- "Running good morning routine" (for routines)
-- "I'll open the curtains in the bedroom" (for curtain control)
-- "Turning on the fan in the office" (for fan control)
-- "I'll close the shutters in the living room" (for shutter control)
-- "Locking the door in the bedroom" (for door control)
-- "Increasing the volume in the living room" (for audio control)
-- "I'll set the fan speed to 50% in the office" (for fan speed control)
-- "I'll dim the lights to 30% in the bedroom" (for light brightness control)
-- "I'll arm the security system" (for security system control)
-- "I'll disarm the security system" (for security system control)
-
-Personalization Guidelines:
-- Use the user's preferred name when available
-- Adapt your tone based on user preferences
-- Reference any special notes about the user
-- Make responses feel tailored to this specific user
-
-Smart Home Actions:
-When the user wants to control devices, you should:
-1. Identify the intent clearly
-2. Specify the device and room if applicable
-3. Provide a natural language response
-4. Include specific commands in your response that can be parsed
-
-Example responses:
-- "I'll turn on the lights in the living room for you."
-- "Setting the temperature to 22°C in the bedroom."
-- "Good morning! I'm turning on the lights and adjusting the temperature."
-- "I'll lock the door in John's room for you."
-- "Increasing the volume in the living room."
-- "I'll set the fan speed to 50% in the office for you."
-- "Dimming the lights to 30% in the bedroom."
-- "Arming the security system now."
-- "Disarming the security system."
-
-Additional Capabilities:
-- Answer general knowledge questions
-- Provide weather information
-- Tell jokes and fun facts
-- Set reminders (conceptual only, no actual reminder system)
-- Provide news updates
-- Help with recipes and cooking tips
-- Assist with fitness and health information
-- Provide entertainment recommendations
-- Help with productivity and organization tips
-
-Keep responses under 50 words and be conversational. If asked about things outside smart home control, provide brief helpful responses.`
-
-      // Add current message to history
+      // Reduce conversation history to 2 entries for faster processing
       const updatedHistory = [
-        ...conversationHistory.slice(-4), // Keep only last 4 entries
+        ...conversationHistory.slice(-2), // Keep only last 2 entries
         { role: 'user', content: message }
       ]
       
@@ -767,12 +675,18 @@ Keep responses under 50 words and be conversational. If asked about things outsi
           'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: 'gpt-3.5-turbo', // Faster and cheaper than gpt-4o-mini
           messages: messages,
-          max_tokens: 200,
-          temperature: 0.7
+          max_tokens: 100, // Reduced from 200 for faster responses
+          temperature: 0.5 // Lower temperature for faster, more deterministic responses
         }),
         signal: abortController.current.signal
+      }).catch(fetchError => {
+        // Handle CORS and network errors gracefully
+        if (fetchError.message?.includes('CORS') || fetchError.message?.includes('Failed to fetch')) {
+          throw new Error('CORS_BLOCKED');
+        }
+        throw fetchError;
       })
 
       if (!response.ok) {
@@ -909,11 +823,17 @@ Keep responses under 50 words and be conversational. If asked about things outsi
       
     } catch (error) {
       if (error.name === 'AbortError') {
-        console.log('ChatGPT request was cancelled')
-        return "Request cancelled."
+        return null // Return null to trigger local command fallback
       }
-      console.error('Error calling ChatGPT:', error)
-      return `I'm having trouble connecting to my AI brain right now. Error: ${error.message}. I can still help with basic commands.`
+      // Silently handle CORS errors - they're expected when calling from browser
+      if (error.message === 'CORS_BLOCKED' || error.message?.includes('CORS')) {
+        return null // Return null to trigger local command fallback
+      }
+      // Only log unexpected errors
+      if (!error.message?.includes('CORS') && !error.message?.includes('Failed to fetch')) {
+        console.error('Error calling ChatGPT:', error)
+      }
+      return null // Return null to trigger local command fallback
     }
   }
 
@@ -1371,9 +1291,17 @@ Keep responses under 50 words and be conversational. If asked about things outsi
       // If no local command matched, try ChatGPT for advanced understanding
       const aiResponse = await callChatGPT(command)
       
-      setCurrentResponse(aiResponse)
-      setAssistantState('responding')
-      speak(aiResponse)
+      if (aiResponse) {
+        setCurrentResponse(aiResponse)
+        setAssistantState('responding')
+        speak(aiResponse)
+      } else {
+        // OpenAI is disabled or CORS blocked - provide helpful message
+        const fallbackMessage = "I can help with basic commands like 'turn on lights', 'good morning', or 'set temperature to 22 degrees'. For advanced AI features, please configure a server-side proxy."
+        setCurrentResponse(fallbackMessage)
+        setAssistantState('responding')
+        speak(fallbackMessage)
+      }
       
     } catch (error) {
       console.error('Error processing voice command:', error)
@@ -1440,6 +1368,12 @@ Keep responses under 50 words and be conversational. If asked about things outsi
           speed: rate,
           // pitch is not universally supported; included as hint via prosody if model honors it
         })
+      }).catch(fetchError => {
+        // Handle CORS and network errors gracefully
+        if (fetchError.message?.includes('CORS') || fetchError.message?.includes('Failed to fetch')) {
+          throw new Error('CORS_BLOCKED');
+        }
+        throw fetchError;
       })
       
       console.log('🔊 TTS Debug - API Response status:', response.status)
@@ -1487,7 +1421,10 @@ Keep responses under 50 words and be conversational. If asked about things outsi
         }, 500)
       }
     } catch (err) {
-      console.error('TTS playback failed:', err)
+      // Silently handle CORS errors - they're expected when calling from browser
+      if (err.message !== 'CORS_BLOCKED' && !err.message?.includes('CORS') && !err.message?.includes('Failed to fetch')) {
+        console.error('TTS playback failed:', err)
+      }
       isSpeaking.current = false
       setTimeout(() => {
         if (!isListening && !isProcessing) {

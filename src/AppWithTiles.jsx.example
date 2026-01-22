@@ -1,0 +1,67 @@
+/**
+ * Example integration of Tile Dashboard into App.jsx
+ * This shows how to add the new components without breaking existing functionality
+ * 
+ * To use: Copy relevant parts into your App.jsx
+ */
+
+import { useState } from 'react';
+import { EnvironmentProvider } from './contexts/EnvironmentContext';
+import { useGlobalStore } from './hooks/useGlobalStore';
+import TileGrid from './components/tiles/TileGrid';
+import ChatPanel from './components/assistant/ChatPanel';
+// ... other existing imports
+
+function SmartMirror() {
+  const { state, actions } = useGlobalStore();
+  const [viewMode, setViewMode] = useState('mirror'); // 'mirror' or 'tiles'
+  const [showAssistant, setShowAssistant] = useState(false);
+  
+  // ... existing code ...
+
+  return (
+    <EnvironmentProvider>
+      <div className="smart-mirror">
+        {/* View Mode Toggle (optional) */}
+        <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 1000 }}>
+          <button onClick={() => setViewMode(viewMode === 'mirror' ? 'tiles' : 'mirror')}>
+            {viewMode === 'mirror' ? 'Tiles' : 'Mirror'}
+          </button>
+        </div>
+
+        {viewMode === 'tiles' ? (
+          /* New Tile Dashboard */
+          <TileGrid 
+            onTileClick={(type) => {
+              // Open existing modal panels
+              openPanel(type);
+            }}
+          />
+        ) : (
+          /* Existing Mirror View */
+          <div className="mirror-content">
+            {/* Your existing mirror content */}
+          </div>
+        )}
+
+        {/* Enhanced Assistant (can be modal or bottom sheet) */}
+        {showAssistant && (
+          <div style={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: '60vh',
+            zIndex: 1000
+          }}>
+            <ChatPanel
+              messages={assistantMessages}
+              onSendMessage={handleAssistantMessage}
+              isStreaming={isStreaming}
+            />
+          </div>
+        )}
+      </div>
+    </EnvironmentProvider>
+  );
+}

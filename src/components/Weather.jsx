@@ -140,11 +140,6 @@ const Weather = ({ data }) => {
   // Calculate feels like temperature with fallback
   const feelsLike = current?.feelsLike || current?.apparent_temperature || Math.round((current?.temperature || 0) * 0.9);
   
-  // Debug logging to see what data we have
-  console.log('Weather data:', current);
-  console.log('Humidity:', current?.humidity);
-  console.log('Feels like:', feelsLike);
-  
   // Get wind direction from degrees
   const getWindDirection = (degrees) => {
     const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
