@@ -1,5 +1,5 @@
 import { memo, useMemo } from 'react';
-import { useEnvironment } from '../../contexts/EnvironmentContext';
+import { useEnvironment } from '../../hooks/useEnvironment';
 import LightsTile from './LightsTile';
 import ClimateTile from './ClimateTile';
 import './tiles.css';

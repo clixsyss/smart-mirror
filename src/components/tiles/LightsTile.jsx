@@ -1,5 +1,5 @@
 import { memo, useMemo } from 'react';
-import { useEnvironment } from '../../contexts/EnvironmentContext';
+import { useEnvironment } from '../../hooks/useEnvironment';
 import { useGlobalStore } from '../../hooks/useGlobalStore';
 import Tile from './Tile';
 

@@ -1,24 +1,7 @@
-import { createContext, useContext, useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { useGlobalStore } from '../hooks/useGlobalStore';
 import { useAuth } from './AuthContext';
-
-/**
- * EnvironmentContext provides room and device awareness throughout the app
- * Single source of truth for:
- * - Active room selection
- * - Device states aggregated by room
- * - Recent user actions
- * - Room/device filtering utilities
- */
-const EnvironmentContext = createContext(null);
-
-export const useEnvironment = () => {
-  const context = useContext(EnvironmentContext);
-  if (!context) {
-    throw new Error('useEnvironment must be used within EnvironmentProvider');
-  }
-  return context;
-};
+import { EnvironmentContext } from './EnvironmentContext.js';
 
 export const EnvironmentProvider = ({ children, activeRoomId = null, onRoomChange = null }) => {
   const { state } = useGlobalStore();
@@ -26,9 +9,9 @@ export const EnvironmentProvider = ({ children, activeRoomId = null, onRoomChang
   const [activeRoom, setActiveRoom] = useState(activeRoomId);
   const [recentActions, setRecentActions] = useState([]);
 
-  // Get rooms and devices from global store
-  const rooms = state?.smartHome?.rooms || [];
-  const allDevices = state?.smartHome?.devices || [];
+  // Get rooms and devices from global store (memoized to prevent dependency issues)
+  const rooms = useMemo(() => state?.smartHome?.rooms || [], [state?.smartHome?.rooms]);
+  const allDevices = useMemo(() => state?.smartHome?.devices || [], [state?.smartHome?.devices]);
 
   // Get active room data
   const activeRoomData = useMemo(() => {
