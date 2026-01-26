@@ -13,6 +13,7 @@
 .clock-canvas {
   width: 280px;
   height: 280px;
+  aspect-ratio: 1 / 1;
   margin-bottom: 1rem;
   border-radius: 50%;
   filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.5));
