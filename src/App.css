@@ -506,8 +506,8 @@
 }
 
 .modal-close-btn {
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   border: none;
   border-radius: 50%;
   background: 
@@ -517,10 +517,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(20px);
+  padding: 0;
 }
 
 /* .modal-close-btn:hover {
@@ -728,10 +729,10 @@
 /* Rotation Button - Bottom Left */
 .rotate-btn {
   position: fixed;
-  bottom: 4rem;
-  left: 4rem;
-  width: 72px;
-  height: 72px;
+  bottom: 3rem;
+  left: 3rem;
+  width: 56px;
+  height: 56px;
   border: none;
   border-radius: 50%;
   background: #000000;
@@ -743,25 +744,27 @@
   backdrop-filter: blur(20px);
   border: 2px solid rgba(255, 255, 255, 0.2);
   box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 6px 24px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.15);
   z-index: 100;
+  padding: 0;
+  font-size: 14px;
 }
 
 .rotate-btn svg {
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   filter: brightness(1.2);
-  stroke-width: 2.5;
+  stroke-width: 2;
 }
 
 /* Lock Button - Next to Rotation Button */
 .lock-btn {
   position: fixed;
-  bottom: 4rem;
-  left: 12rem;
-  width: 72px;
-  height: 72px;
+  bottom: 3rem;
+  left: 9.5rem;
+  width: 56px;
+  height: 56px;
   border: none;
   border-radius: 50%;
   background: #000000;
@@ -773,10 +776,12 @@
   backdrop-filter: blur(20px);
   border: 2px solid rgba(255, 255, 255, 0.2);
   box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 6px 24px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.15);
   z-index: 100;
   transition: all 0.3s ease;
+  padding: 0;
+  font-size: 14px;
 }
 
 .lock-btn:hover {
@@ -798,19 +803,19 @@
 }
 
 .lock-btn svg {
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   filter: brightness(1.2);
-  stroke-width: 2.5;
+  stroke-width: 2;
 }
 
 /* Settings Button - Bottom Right */
 .settings-btn {
   position: fixed;
-  bottom: 4rem;
-  right: 4rem;
-  width: 72px;
-  height: 72px;
+  bottom: 3rem;
+  right: 3rem;
+  width: 56px;
+  height: 56px;
   border: none;
   border-radius: 50%;
   background: #000000;
@@ -822,18 +827,20 @@
   backdrop-filter: blur(20px);
   border: 2px solid rgba(255, 255, 255, 0.2);
   box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 6px 24px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.15); 
   z-index: 100;
   will-change: transform;
   backface-visibility: hidden;
+  padding: 0;
+  font-size: 14px;
 }
 
 .settings-btn svg {
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   filter: brightness(1.2);
-  stroke-width: 2.5;
+  stroke-width: 2;
 }
 
 /* Overlay Background */
@@ -912,24 +919,26 @@
   
   .rotate-btn {
     bottom: 2rem;
-    left: 4rem;
-    width: 60px;
-    height: 60px;
+    left: 3rem;
+    width: 48px;
+    height: 48px;
   }
   
   .rotate-btn svg {
-    width: 28px;
-    height: 28px;
+    width: 20px;
+    height: 20px;
   }
   
   .settings-btn {
     bottom: 2rem;
-    right: 4rem;
-    width: 60px;
-    height: 60px;
+    right: 3rem;
+    width: 48px;
+    height: 48px;
   }
   
   .settings-btn svg {
+    width: 20px;
+    height: 20px;
     width: 28px;
     height: 28px;
   }

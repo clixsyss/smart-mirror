@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useRef, useCallback } from 'react';
 import { useEnvironment } from '../../hooks/useEnvironment';
 import { useGlobalStore } from '../../hooks/useGlobalStore';
 import Tile from './Tile';
@@ -13,6 +13,8 @@ const ClimateTile = memo(({ roomId = null, onClick }) => {
   const { devicesByType, activeRoomData, getDevicesByRoom } = useEnvironment();
   const { actions, state } = useGlobalStore();
   const userId = state?.app?.currentUserId;
+  const lastToggleTime = useRef(0);
+  const DEBOUNCE_MS = 400;
 
   // Get climate devices for the specified room or active room
   const climateDevices = useMemo(() => {
@@ -35,28 +37,40 @@ const ClimateTile = memo(({ roomId = null, onClick }) => {
     return activeRoomData?.name || 'All Rooms';
   }, [roomId, activeRoomData, state]);
 
-  // Calculate status
+  // Calculate status - simplified
   const status = useMemo(() => {
-    if (climateDevices.length === 0) return 'No climate devices';
+    if (climateDevices.length === 0) return 'No devices';
     const activeDevices = climateDevices.filter(d => d.state);
-    if (activeDevices.length === 0) return 'Off';
+    if (activeDevices.length === 0) return 'OFF';
     
     const avgTemp = activeDevices
       .filter(d => d.temperature !== undefined)
       .reduce((sum, d) => sum + (d.temperature || 0), 0) / activeDevices.length || 0;
     
     if (avgTemp > 0) {
-      return `${Math.round(avgTemp)}°C • ${activeDevices.length} active`;
+      return `${Math.round(avgTemp)}°C • ON`;
     }
-    return `${activeDevices.length} active`;
+    return 'ON';
   }, [climateDevices]);
 
   const anyOn = climateDevices.some(d => d.state);
 
-  // Toggle climate
-  const handleToggle = async (e) => {
+  // Toggle climate - debounced
+  const handleTileClick = useCallback(async (e) => {
     e?.stopPropagation();
-    if (!userId || climateDevices.length === 0) return;
+    
+    // Debounce to prevent accidental double toggles
+    const now = Date.now();
+    if (now - lastToggleTime.current < DEBOUNCE_MS) {
+      return;
+    }
+    lastToggleTime.current = now;
+
+    if (!userId || climateDevices.length === 0) {
+      // If no devices, call onClick if provided (for navigation)
+      if (onClick) onClick();
+      return;
+    }
 
     const newState = !anyOn;
     try {
@@ -69,54 +83,7 @@ const ClimateTile = memo(({ roomId = null, onClick }) => {
     } catch (error) {
       console.error('Error toggling climate:', error);
     }
-  };
-
-  // Adjust temperature
-  const handleTemperatureChange = async (e, device) => {
-    e?.stopPropagation();
-    if (!userId || !device.id) return;
-
-    const temperature = parseInt(e.target.value);
-    const roomIdForDevice = roomId || device.roomId || activeRoomData?.id;
-    if (roomIdForDevice) {
-      try {
-        await actions.setClimateTemperature(userId, roomIdForDevice, device.id, temperature);
-      } catch (error) {
-        console.error('Error setting temperature:', error);
-      }
-    }
-  };
-
-  const primaryAction = (
-    <div className="tile-toggle-container" onClick={handleToggle}>
-      <div className={`tile-toggle ${anyOn ? 'active' : ''}`} />
-      <span style={{ marginLeft: '12px', fontSize: '14px' }}>
-        {anyOn ? 'On' : 'Off'}
-      </span>
-    </div>
-  );
-
-  const secondaryActions = climateDevices.slice(0, 1).map(device => (
-    <div key={device.id} className="climate-control-item">
-      <span style={{ fontSize: '12px', opacity: 0.8 }}>{device.name}</span>
-      {device.temperature !== undefined && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-          <input
-            type="range"
-            min="16"
-            max="30"
-            value={device.temperature || 22}
-            onChange={(e) => handleTemperatureChange(e, device)}
-            className="tile-slider"
-            style={{ flex: 1 }}
-          />
-          <span style={{ fontSize: '14px', fontWeight: '500', minWidth: '32px' }}>
-            {device.temperature || 22}°C
-          </span>
-        </div>
-      )}
-    </div>
-  ));
+  }, [userId, climateDevices, anyOn, roomId, activeRoomData, actions, onClick]);
 
   return (
     <Tile
@@ -125,10 +92,9 @@ const ClimateTile = memo(({ roomId = null, onClick }) => {
       icon={<ClimateIcon />}
       iconColor={anyOn ? '#4FC3F7' : '#ffffff'}
       status={status}
-      primaryAction={primaryAction}
-      secondaryActions={secondaryActions.length > 0 ? [secondaryActions] : []}
-      onClick={onClick}
+      onClick={handleTileClick}
       loading={climateDevices.length === 0 && state?.smartHome?.loading}
+      className={anyOn ? 'tile-on' : 'tile-off'}
     />
   );
 });

@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useRef, useCallback } from 'react';
 import { useEnvironment } from '../../hooks/useEnvironment';
 import { useGlobalStore } from '../../hooks/useGlobalStore';
 import Tile from './Tile';
@@ -14,6 +14,8 @@ const LightsTile = memo(({ roomId = null, onClick }) => {
   const { devicesByType, activeRoomData, getDevicesByRoom } = useEnvironment();
   const { actions, state } = useGlobalStore();
   const userId = state?.app?.currentUserId;
+  const lastToggleTime = useRef(0);
+  const DEBOUNCE_MS = 400;
 
   // Get lights for the specified room or active room
   const lights = useMemo(() => {
@@ -33,28 +35,33 @@ const LightsTile = memo(({ roomId = null, onClick }) => {
     return activeRoomData?.name || 'All Lights';
   }, [roomId, activeRoomData, state]);
 
-  // Calculate status
+  // Calculate status - simplified
   const status = useMemo(() => {
     if (lights.length === 0) return 'No lights';
     const onCount = lights.filter(l => l.state).length;
-    const avgBrightness = lights
-      .filter(l => l.state && l.brightness !== undefined)
-      .reduce((sum, l) => sum + (l.brightness || 0), 0) / onCount || 0;
-
-    if (onCount === 0) return 'All off';
-    if (onCount === lights.length) {
-      return avgBrightness > 0 ? `${Math.round(avgBrightness)}% brightness` : 'All on';
-    }
-    return `${onCount} of ${lights.length} on`;
+    if (onCount === 0) return 'OFF';
+    if (onCount === lights.length) return 'ON';
+    return `${onCount}/${lights.length} ON`;
   }, [lights]);
 
-  const allOn = lights.length > 0 && lights.every(l => l.state);
   const anyOn = lights.some(l => l.state);
 
-  // Toggle all lights
-  const handleToggle = async (e) => {
+  // Toggle all lights - debounced
+  const handleTileClick = useCallback(async (e) => {
     e?.stopPropagation();
-    if (!userId || lights.length === 0) return;
+    
+    // Debounce to prevent accidental double toggles
+    const now = Date.now();
+    if (now - lastToggleTime.current < DEBOUNCE_MS) {
+      return;
+    }
+    lastToggleTime.current = now;
+
+    if (!userId || lights.length === 0) {
+      // If no lights, call onClick if provided (for navigation)
+      if (onClick) onClick();
+      return;
+    }
 
     const newState = !anyOn;
     try {
@@ -67,49 +74,7 @@ const LightsTile = memo(({ roomId = null, onClick }) => {
     } catch (error) {
       console.error('Error toggling lights:', error);
     }
-  };
-
-  // Adjust brightness
-  const handleBrightnessChange = async (e, light) => {
-    e?.stopPropagation();
-    if (!userId || !light.id) return;
-
-    const brightness = parseInt(e.target.value);
-    const roomIdForLight = roomId || light.roomId || activeRoomData?.id;
-    if (roomIdForLight) {
-      try {
-        await actions.setLightBrightness(userId, roomIdForLight, light.id, brightness);
-      } catch (error) {
-        console.error('Error setting brightness:', error);
-      }
-    }
-  };
-
-  const primaryAction = (
-    <div className="tile-toggle-container" onClick={handleToggle}>
-      <div className={`tile-toggle ${anyOn ? 'active' : ''}`} />
-      <span style={{ marginLeft: '12px', fontSize: '14px' }}>
-        {anyOn ? 'On' : 'Off'}
-      </span>
-    </div>
-  );
-
-  const secondaryActions = lights.slice(0, 2).map(light => (
-    <div key={light.id} className="light-control-item">
-      <span style={{ fontSize: '12px', opacity: 0.8 }}>{light.name}</span>
-      {light.brightness !== undefined && (
-        <input
-          type="range"
-          min="0"
-          max="100"
-          value={light.brightness || 0}
-          onChange={(e) => handleBrightnessChange(e, light)}
-          className="tile-slider"
-          style={{ width: '100%', marginTop: '4px' }}
-        />
-      )}
-    </div>
-  ));
+  }, [userId, lights, anyOn, roomId, activeRoomData, actions, onClick]);
 
   return (
     <Tile
@@ -118,10 +83,9 @@ const LightsTile = memo(({ roomId = null, onClick }) => {
       icon={<LightIcon />}
       iconColor={anyOn ? '#FFD700' : '#ffffff'}
       status={status}
-      primaryAction={primaryAction}
-      secondaryActions={secondaryActions.length > 0 ? [secondaryActions] : []}
-      onClick={onClick}
+      onClick={handleTileClick}
       loading={lights.length === 0 && state?.smartHome?.loading}
+      className={anyOn ? 'tile-on' : 'tile-off'}
     />
   );
 });

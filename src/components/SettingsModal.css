@@ -295,17 +295,17 @@
 
 .update-location-btn,
 .detect-location-btn {
-  padding: 0.75rem 1.25rem;
+  padding: 10px 16px;
   border: none;
   border-radius: 12px;
   color: #ffffff;
-  font-size: 0.95rem;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(20px);
   flex: 1;
-  min-width: 120px;
+  min-width: 100px;
 }
 
 .update-location-btn {

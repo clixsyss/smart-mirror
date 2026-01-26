@@ -228,6 +228,8 @@
 }
 
 .retry-button {
+  padding: 8px 14px;
+  font-size: 13px;
   margin-top: 1rem;
   padding: 0.6rem 1.2rem;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);

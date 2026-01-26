@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import { prioritizeCountry } from '../utils/prioritizeCountry'
 import './SettingsModal.css'
 
 const SettingsModal = ({ onClose, state, actions, logout, onInteraction }) => {
   const settings = state.settings || {}
   const [locationInput, setLocationInput] = useState(settings.weatherLocation || 'New York, NY')
-  const [isDetectingLocation, setIsDetectingLocation] = useState(false)
   const [timezone, setTimezone] = useState(settings.timezone || '')
   const [dstAdjustment, setDstAdjustment] = useState(settings.dstAdjustment || 'auto')
   const [voiceSettings, setVoiceSettings] = useState(() => {
@@ -17,181 +17,9 @@ const SettingsModal = ({ onClose, state, actions, logout, onInteraction }) => {
       lang: 'en-US'
     }
   })
-  
-  // Update local state when settings change
-  useEffect(() => {
-    setLocationInput(settings.weatherLocation || 'New York, NY')
-    setTimezone(settings.timezone || '')
-    setDstAdjustment(settings.dstAdjustment || 'auto')
-  }, [settings.weatherLocation, settings.timezone, settings.dstAdjustment])
 
-  const handleSettingChange = (key, value) => {
-    if (actions && actions.updateDisplaySetting) {
-      actions.updateDisplaySetting(key, value)
-    } else {
-      console.error('updateDisplaySetting action not available')
-    }
-  }
-
-  const handleLocationChange = (e) => {
-    const newLocation = e.target.value
-    setLocationInput(newLocation)
-  }
-
-  const handleTimezoneChange = (e) => {
-    const newTimezone = e.target.value
-    setTimezone(newTimezone)
-    handleSettingChange('timezone', newTimezone)
-  }
-
-  const handleLocationUpdate = (newLocation, detectedTimezone = null) => {
-    setLocationInput(newLocation)
-    
-    // Update both weather location and timezone together
-    if (actions && actions.updateWeatherLocation) {
-      actions.updateWeatherLocation(newLocation)
-      
-      // Use provided timezone or auto-detect
-      const timezoneToUse = detectedTimezone || (actions.getTimezoneFromLocation ? actions.getTimezoneFromLocation(newLocation) : null)
-      
-      if (timezoneToUse) {
-        setTimezone(timezoneToUse)
-        handleSettingChange('timezone', timezoneToUse)
-      }
-    } else {
-      console.error('updateWeatherLocation action not available')
-    }
-  }
-
-  const handleLocationDropdownChange = (e) => {
-    const selectedValue = e.target.value
-    
-    if (selectedValue) {
-      // Find the selected city data
-      for (const country of worldLocations) {
-        const city = country.cities.find(c => c.name === selectedValue)
-        if (city) {
-          handleLocationUpdate(city.name, city.timezone)
-          break
-        }
-      }
-    }
-  }
-
-  const handleDstChange = (e) => {
-    const newDst = e.target.value
-    setDstAdjustment(newDst)
-    handleSettingChange('dstAdjustment', newDst)
-  }
-
-  const updateWeatherLocation = () => {
-    // Update when user clicks "Update" or presses Enter
-    if (locationInput.trim()) {
-      handleLocationUpdate(locationInput.trim())
-    }
-  }
-
-  const handleLocationKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      updateWeatherLocation()
-    }
-  }
-
-  // Function to detect user's location using browser geolocation
-  const detectUserLocation = () => {
-    if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser')
-      return
-    }
-
-    setIsDetectingLocation(true)
-    
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords
-        
-        try {
-          // Use reverse geocoding to get location name
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
-          )
-          
-          if (!response.ok) {
-            throw new Error('Reverse geocoding failed')
-          }
-          
-          const data = await response.json()
-          
-          // Construct location string from address components
-          const { city, town, village, state, country } = data.address
-          const locationName = [city || town || village, state, country]
-            .filter(Boolean)
-            .join(', ')
-          
-          if (locationName) {
-            // Use the new unified location update function
-            handleLocationUpdate(locationName)
-          } else {
-            throw new Error('Could not determine location name')
-          }
-          
-          // Try to get timezone from coordinates
-          try {
-            // Using a free timezone API
-            const tzResponse = await fetch(
-              `https://timeapi.io/api/TimeZone/coordinate?latitude=${latitude}&longitude=${longitude}`
-            )
-            
-            if (tzResponse.ok) {
-              const tzData = await tzResponse.json()
-              if (tzData.timeZone) {
-                setTimezone(tzData.timeZone)
-                handleSettingChange('timezone', tzData.timeZone)
-              }
-            }
-          } catch (tzError) {
-            console.warn('Could not fetch timezone from coordinates:', tzError)
-            // Fallback to location-based timezone detection
-            const detectedTimezone = actions.getTimezoneFromLocation(locationName)
-            setTimezone(detectedTimezone)
-            handleSettingChange('timezone', detectedTimezone)
-          }
-        } catch (error) {
-          console.error('Error getting location name:', error)
-          // Fallback to coordinates
-          const locationName = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
-          handleLocationUpdate(locationName)
-        } finally {
-          setIsDetectingLocation(false)
-        }
-      },
-      (error) => {
-        console.error('Error getting location:', error)
-        alert('Unable to retrieve your location. Please enter manually.')
-        setIsDetectingLocation(false)
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 300000 // 5 minutes
-      }
-    )
-  }
-
-  const handleLogout = () => {
-    logout()
-    onClose()
-  }
-
-  // Handle voice settings changes
-  const handleVoiceSettingChange = (key, value) => {
-    const newSettings = { ...voiceSettings, [key]: value }
-    setVoiceSettings(newSettings)
-    localStorage.setItem('voiceSettings', JSON.stringify(newSettings))
-  }
-
-  // Comprehensive locations with cities and timezones
-  const worldLocations = [
+  // Comprehensive locations with cities and timezones - moved to top for availability
+  const worldLocationsRaw = [
     // North America
     {
       country: 'United States',
@@ -492,6 +320,103 @@ const SettingsModal = ({ onClose, state, actions, logout, onInteraction }) => {
       ]
     }
   ]
+
+  // Prioritize Egypt first in the list
+  const worldLocations = useMemo(() => {
+    return prioritizeCountry(worldLocationsRaw, 'Egypt');
+  }, []);
+  
+  // Update local state when settings change
+  useEffect(() => {
+    setLocationInput(settings.weatherLocation || 'New York, NY')
+    setTimezone(settings.timezone || '')
+    setDstAdjustment(settings.dstAdjustment || 'auto')
+  }, [settings.weatherLocation, settings.timezone, settings.dstAdjustment])
+
+  const handleSettingChange = (key, value) => {
+    if (actions && actions.updateDisplaySetting) {
+      actions.updateDisplaySetting(key, value)
+    } else {
+      console.error('updateDisplaySetting action not available')
+    }
+  }
+
+  const handleLocationChange = (e) => {
+    const newLocation = e.target.value
+    setLocationInput(newLocation)
+  }
+
+  const handleTimezoneChange = (e) => {
+    const newTimezone = e.target.value
+    setTimezone(newTimezone)
+    handleSettingChange('timezone', newTimezone)
+  }
+
+  const handleLocationUpdate = (newLocation, detectedTimezone = null) => {
+    setLocationInput(newLocation)
+    
+    // Update both weather location and timezone together
+    if (actions && actions.updateWeatherLocation) {
+      actions.updateWeatherLocation(newLocation)
+      
+      // Use provided timezone or auto-detect
+      const timezoneToUse = detectedTimezone || (actions.getTimezoneFromLocation ? actions.getTimezoneFromLocation(newLocation) : null)
+      
+      if (timezoneToUse) {
+        setTimezone(timezoneToUse)
+        handleSettingChange('timezone', timezoneToUse)
+      }
+    } else {
+      console.error('updateWeatherLocation action not available')
+    }
+  }
+
+  const handleLocationDropdownChange = (e) => {
+    const selectedValue = e.target.value
+    
+    if (selectedValue) {
+      // Find the selected city data
+      for (const country of worldLocations) {
+        const city = country.cities.find(c => c.name === selectedValue)
+        if (city) {
+          handleLocationUpdate(city.name, city.timezone)
+          break
+        }
+      }
+    }
+  }
+
+  const handleDstChange = (e) => {
+    const newDst = e.target.value
+    setDstAdjustment(newDst)
+    handleSettingChange('dstAdjustment', newDst)
+  }
+
+  const updateWeatherLocation = () => {
+    // Update when user clicks "Update" or presses Enter
+    if (locationInput.trim()) {
+      handleLocationUpdate(locationInput.trim())
+    }
+  }
+
+  const handleLocationKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      updateWeatherLocation()
+    }
+  }
+
+  const handleLogout = () => {
+    logout()
+    onClose()
+  }
+
+  // Handle voice settings changes
+  const handleVoiceSettingChange = (key, value) => {
+    const newSettings = { ...voiceSettings, [key]: value }
+    setVoiceSettings(newSettings)
+    localStorage.setItem('voiceSettings', JSON.stringify(newSettings))
+  }
+
   return (
     <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
       <div className="settings-content" onMouseMove={onInteraction} onTouchStart={onInteraction}>
@@ -768,7 +693,6 @@ const SettingsModal = ({ onClose, state, actions, logout, onInteraction }) => {
                 value={locationInput}
                 onChange={handleLocationDropdownChange}
                 className="location-select"
-                disabled={isDetectingLocation}
               >
                 <option value="">Select your location...</option>
                 {worldLocations.map((country) => (
@@ -781,16 +705,6 @@ const SettingsModal = ({ onClose, state, actions, logout, onInteraction }) => {
                   </optgroup>
                 ))}
               </select>
-
-              <div className="location-buttons-row">
-                <button 
-                  className="detect-location-btn" 
-                  onClick={detectUserLocation}
-                  disabled={isDetectingLocation}
-                >
-                  {isDetectingLocation ? 'Detecting...' : 'Use My Current Location'}
-                </button>
-              </div>
 
               <div className="location-hint">
                 Select your city to automatically set weather data and timezone

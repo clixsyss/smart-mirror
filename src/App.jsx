@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { useGlobalStore } from './hooks/useGlobalStore'
 import useConnectivity from './hooks/useConnectivity'
@@ -16,6 +16,9 @@ import CurtainsControl from './components/CurtainsControl'
 import ErrorBoundary from './components/ErrorBoundary'
 import SettingsModal from './components/SettingsModal'
 import OfflineMode from './components/OfflineMode'
+import RoomsView from './components/RoomsView'
+import DevicesView from './components/DevicesView'
+import { EnvironmentProvider } from './contexts/EnvironmentContext.jsx'
 import logoImage from './assets/logo.png'
 import './App.css'
 
@@ -97,6 +100,8 @@ function SmartMirror() {
   const [activePanel, setActivePanel] = useState(null) // 'lights', 'climate', 'fans', 'assistant', or null
   const [showSettings, setShowSettings] = useState(false)
   const [showServices, setShowServices] = useState(false)
+  const [showRooms, setShowRooms] = useState(false)
+  const [selectedRoomId, setSelectedRoomId] = useState(null)
   const [modalTimeout, setModalTimeout] = useState(null)
   const [screenRotation, setScreenRotation] = useState(() => {
     // Load saved rotation from localStorage
@@ -108,6 +113,13 @@ function SmartMirror() {
   const { state, actions } = useGlobalStore()
   const connectivity = useConnectivity()
 
+  const clearModalTimeout = useCallback(() => {
+    if (modalTimeout) {
+      clearTimeout(modalTimeout)
+      setModalTimeout(null)
+    }
+  }, [modalTimeout])
+
   useEffect(() => {
     if (user && !state.app.isInitialized) {
       actions.initialize(user.uid).catch(error => {
@@ -118,12 +130,9 @@ function SmartMirror() {
       // Also clear local component state
       setActivePanel(null)
       setShowSettings(false)
-      if (modalTimeout) {
-        clearTimeout(modalTimeout)
-        setModalTimeout(null)
-      }
+      clearModalTimeout()
     }
-  }, [user, state.app.isInitialized, actions])
+  }, [user, state.app.isInitialized, actions, clearModalTimeout])
 
   useEffect(() => {
     let hideTimeout
@@ -146,14 +155,7 @@ function SmartMirror() {
       clearTimeout(hideTimeout)
       clearModalTimeout() // Clean up modal timeout
     }
-  }, [isLocked]) // Add isLocked as dependency
-
-  const clearModalTimeout = () => {
-    if (modalTimeout) {
-      clearTimeout(modalTimeout)
-      setModalTimeout(null)
-    }
-  }
+  }, [isLocked, clearModalTimeout])
 
   const openPanel = (panel) => {
     if (isLocked) return; // Prevent action if locked
@@ -179,6 +181,8 @@ function SmartMirror() {
     clearModalTimeout()
   }
 
+  // openServices kept for potential future use or other components
+  // eslint-disable-next-line no-unused-vars
   const openServices = () => {
     if (isLocked) return; // Prevent action if locked
     setShowServices(true)
@@ -187,6 +191,29 @@ function SmartMirror() {
   const closeServices = () => {
     if (isLocked) return; // Prevent action if locked
     setShowServices(false)
+  }
+
+  // Logo click opens Rooms view
+  const openRooms = () => {
+    if (isLocked) return;
+    setShowRooms(true);
+    setSelectedRoomId(null);
+  }
+
+  const closeRooms = () => {
+    if (isLocked) return;
+    setShowRooms(false);
+    setSelectedRoomId(null);
+  }
+
+  const handleRoomSelect = (roomId) => {
+    setSelectedRoomId(roomId);
+    setShowRooms(false);
+  }
+
+  const handleBackToRooms = () => {
+    setSelectedRoomId(null);
+    setShowRooms(true);
   }
 
   const handleScreenRotation = () => {
@@ -253,7 +280,7 @@ function SmartMirror() {
           <div className="card quote-card">
             <QuoteOfDay data={state.quote} settings={state.settings} />
           </div>
-          <div className="company-logo-section" onClick={openServices}>
+          <div className="company-logo-section" onClick={openRooms}>
             <div className="company-logo-container">
               <img 
                 src={logoImage} 
@@ -301,8 +328,8 @@ function SmartMirror() {
           </div>
         )}
 
-        {/* Company Logo Section - Replaces Services Grid */}
-        <div className="company-logo-section" onClick={openServices}>
+        {/* Company Logo Section - Opens Rooms View */}
+        <div className="company-logo-section" onClick={openRooms}>
           <div className="company-logo-container">
             <img 
               src={logoImage} 
@@ -520,12 +547,12 @@ function SmartMirror() {
         title={isLocked ? "Unlock Interface" : "Lock Interface"}
       >
         {isLocked ? (
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
             <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
           </svg>
         ) : (
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
             <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
             <path d="M12 11v4"/>
@@ -541,6 +568,23 @@ function SmartMirror() {
       >
         <SettingsIcon />
       </button>
+
+      {/* Rooms View */}
+      {showRooms && !selectedRoomId && (
+        <RoomsView
+          onSelectRoom={handleRoomSelect}
+          onBack={closeRooms}
+        />
+      )}
+
+      {/* Devices View (for selected room) */}
+      {selectedRoomId && (
+        <DevicesView
+          roomId={selectedRoomId}
+          onBack={closeRooms}
+          onBackToRooms={handleBackToRooms}
+        />
+      )}
 
       {/* Services Bottom Drawer */}
       {showServices && (
@@ -630,7 +674,9 @@ function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <SmartMirror />
+        <EnvironmentProvider>
+          <SmartMirror />
+        </EnvironmentProvider>
       </AuthProvider>
     </ErrorBoundary>
   )

@@ -18,7 +18,12 @@ const Tile = memo(({
   loading = false,
   onClick,
   className = '',
-  size = 'medium' // 'small', 'medium', 'large'
+  size = 'medium', // 'small', 'medium', 'large'
+  variant = 'default', // 'default', 'device'
+  active = false,
+  accent = null,
+  valueText = null,
+  controls = null
 }) => {
   const handleClick = (e) => {
     if (onClick && !loading) {
@@ -26,12 +31,19 @@ const Tile = memo(({
     }
   };
 
+  const accentStyle = accent ? {
+    '--tile-accent': accent.accent,
+    '--tile-accent-bg': accent.accentBg,
+    '--tile-accent-glow': accent.accentGlow
+  } : undefined;
+
   return (
     <div 
-      className={`tile tile-${size} ${loading ? 'tile-loading' : ''} ${className}`}
+      className={`tile tile-${size} ${loading ? 'tile-loading' : ''} ${variant === 'device' ? 'tile-device' : ''} ${active ? 'tile-active' : ''} ${className}`}
       onClick={handleClick}
       role="button"
       tabIndex={0}
+      style={accentStyle}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
@@ -45,6 +57,31 @@ const Tile = memo(({
           <div className="skeleton-text"></div>
           <div className="skeleton-text short"></div>
         </div>
+      ) : variant === 'device' ? (
+        <>
+          <div className="tile-device-main">
+            <div className="tile-device-left">
+              <div className="tile-device-title">{title}</div>
+            </div>
+            <div className="tile-device-icon">
+              {icon}
+            </div>
+          </div>
+          <div className="tile-device-footer">
+            <div className="tile-device-meta">
+              {valueText && <div className="tile-device-value">{valueText}</div>}
+              {subtitle && <div className="tile-device-subtitle">{subtitle}</div>}
+            </div>
+            <div className="tile-device-actions">
+              {controls}
+              {status && (
+                <span className="tile-device-pill">
+                  {status}
+                </span>
+              )}
+            </div>
+          </div>
+        </>
       ) : (
         <>
           {/* Header */}

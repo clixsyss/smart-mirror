@@ -360,9 +360,21 @@ class GlobalStore {
     ];
     
     try {
+      const quoteApiUrl = import.meta.env?.VITE_QUOTE_API_URL;
+      if (!quoteApiUrl || quoteApiUrl === 'disabled') {
+        const randomQuote = fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)];
+        this.updateSection('quote', {
+          content: randomQuote.content,
+          author: randomQuote.author,
+          loading: false,
+          lastUpdated: Date.now()
+        });
+        return;
+      }
+
       const quoteData = await cacheManager.fetchWithCache('quote', async () => {
         try {
-          const response = await fetch('https://api.quotable.io/random?minLength=50&maxLength=150');
+          const response = await fetch(quoteApiUrl);
           
           if (!response.ok) {
             throw new Error(`Quote API error: ${response.status}`);
@@ -1157,8 +1169,7 @@ class GlobalStore {
       // Try to update in Firebase if roomsStore is available
       if (roomsStore && roomsStore.updateDevice) {
         await roomsStore.updateDevice(userId, roomId, deviceId, { state });
-        // Refresh smart home data to get updated state
-        this.fetchSmartHomeData(userId);
+        // Real-time listener will automatically update the UI
       }
     } catch (error) {
       console.error('Error toggling light:', error);
@@ -1184,8 +1195,7 @@ class GlobalStore {
       // Try to update in Firebase if roomsStore is available
       if (roomsStore && roomsStore.updateDevice) {
         await roomsStore.updateDevice(userId, roomId, deviceId, { brightness });
-        // Refresh smart home data to get updated state
-        this.fetchSmartHomeData(userId);
+        // Real-time listener will automatically update the UI
       }
     } catch (error) {
       console.error('Error setting light brightness:', error);
@@ -1211,8 +1221,7 @@ class GlobalStore {
       // Try to update in Firebase if roomsStore is available
       if (roomsStore && roomsStore.updateDevice) {
         await roomsStore.updateDevice(userId, roomId, deviceId, { state });
-        // Refresh smart home data to get updated state
-        this.fetchSmartHomeData(userId);
+        // Real-time listener will automatically update the UI
       }
     } catch (error) {
       console.error('Error setting climate state:', error);
@@ -1238,8 +1247,7 @@ class GlobalStore {
       // Try to update in Firebase if roomsStore is available
       if (roomsStore && roomsStore.updateDevice) {
         await roomsStore.updateDevice(userId, roomId, deviceId, { temperature });
-        // Refresh smart home data to get updated state
-        this.fetchSmartHomeData(userId);
+        // Real-time listener will automatically update the UI
       }
     } catch (error) {
       console.error('Error setting climate temperature:', error);
@@ -1265,8 +1273,7 @@ class GlobalStore {
       // Try to update in Firebase if roomsStore is available
       if (roomsStore && roomsStore.updateDevice) {
         await roomsStore.updateDevice(userId, roomId, deviceId, { mode });
-        // Refresh smart home data to get updated state
-        this.fetchSmartHomeData(userId);
+        // Real-time listener will automatically update the UI
       }
     } catch (error) {
       console.error('Error setting climate mode:', error);
@@ -1292,8 +1299,7 @@ class GlobalStore {
       // Try to update in Firebase if roomsStore is available
       if (roomsStore && roomsStore.updateDevice) {
         await roomsStore.updateDevice(userId, roomId, deviceId, { speed });
-        // Refresh smart home data to get updated state
-        this.fetchSmartHomeData(userId);
+        // Real-time listener will automatically update the UI
       }
     } catch (error) {
       console.error('Error setting fan speed:', error);
