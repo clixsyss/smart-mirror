@@ -809,6 +809,52 @@
   stroke-width: 2;
 }
 
+/* AI Assistant Button - Bottom Right (before Settings) */
+.ai-assistant-btn {
+  position: fixed;
+  bottom: 3rem;
+  right: 9.5rem;
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(138, 43, 226, 0.2) 0%, rgba(75, 0, 130, 0.1) 100%);
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(20px);
+  border: 2px solid rgba(138, 43, 226, 0.3);
+  box-shadow: 
+    0 6px 24px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  z-index: 100;
+  transition: all 0.3s ease;
+  padding: 0;
+  font-size: 14px;
+}
+
+.ai-assistant-btn:hover {
+  transform: scale(1.05);
+  border-color: rgba(138, 43, 226, 0.5);
+  box-shadow: 
+    0 12px 40px rgba(138, 43, 226, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 0 30px rgba(138, 43, 226, 0.2);
+}
+
+.ai-assistant-btn:active {
+  transform: scale(0.95);
+}
+
+.ai-assistant-btn svg {
+  width: 24px;
+  height: 24px;
+  filter: brightness(1.2);
+  stroke-width: 2;
+}
+
 /* Settings Button - Bottom Right */
 .settings-btn {
   position: fixed;
