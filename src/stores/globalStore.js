@@ -1135,16 +1135,79 @@ class GlobalStore {
     const roomIndex = currentRooms.findIndex(room => room.id === roomId);
     
     if (roomIndex !== -1) {
-      const deviceIndex = currentRooms[roomIndex].devices.findIndex(device => device.id === deviceId);
-      if (deviceIndex !== -1) {
-        currentRooms[roomIndex].devices[deviceIndex] = {
-          ...currentRooms[roomIndex].devices[deviceIndex],
-          ...updates
-        };
-        
+      const room = currentRooms[roomIndex];
+      let updated = false;
+
+      if (!Array.isArray(room.devices)) {
+        room.devices = [];
+      }
+
+      if (Array.isArray(room.devices)) {
+        const deviceIndex = room.devices.findIndex(device => device.id === deviceId);
+        if (deviceIndex !== -1) {
+          room.devices[deviceIndex] = {
+            ...room.devices[deviceIndex],
+            ...updates
+          };
+          updated = true;
+        }
+      }
+
+      if (Array.isArray(room.lights)) {
+        const lightIndex = room.lights.findIndex(light => (light.deviceId || light.id) === deviceId);
+        if (lightIndex !== -1) {
+          room.lights[lightIndex] = {
+            ...room.lights[lightIndex],
+            ...updates
+          };
+          updated = true;
+
+          if (Array.isArray(room.devices)) {
+            const existingDeviceIndex = room.devices.findIndex(device => device.id === deviceId);
+            if (existingDeviceIndex === -1) {
+              room.devices.push({
+                id: deviceId,
+                name: room.lights[lightIndex].name || 'Light',
+                type: 'light',
+                state: room.lights[lightIndex].state,
+                brightness: room.lights[lightIndex].brightness
+              });
+            }
+          }
+        }
+      }
+
+      if (updated) {
+        const devices = [];
+        currentRooms.forEach(r => {
+          if (Array.isArray(r.devices)) {
+            r.devices.forEach(device => {
+              if (!devices.find(d => d.id === device.id)) {
+                devices.push(device);
+              }
+            });
+          }
+          if (Array.isArray(r.lights)) {
+            r.lights.forEach(light => {
+              const lightId = light.deviceId || light.id;
+              if (lightId && !devices.find(d => d.id === lightId)) {
+                devices.push({
+                  id: lightId,
+                  name: light.name || 'Light',
+                  type: 'light',
+                  state: light.state,
+                  brightness: light.brightness,
+                  roomId: r.id,
+                  roomName: r.name
+                });
+              }
+            });
+          }
+        });
+
         this.updateSection('smartHome', {
           rooms: currentRooms,
-          devices: currentRooms.flatMap(room => room.devices || [])
+          devices
         });
       }
     }

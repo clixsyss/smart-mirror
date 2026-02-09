@@ -896,13 +896,161 @@ export const BRIGHTNESS_EXPRESSIONS = {
 };
 
 /**
+ * AI-Enhanced Intent Parsing with Reasoning
+ * Uses contextual clues and semantic understanding
+ */
+function parseIntentWithAIReasoning(input) {
+  // Multi-device commands (e.g., "turn on all lights", "turn off everything in bedroom")
+  if (input.includes('all') || input.includes('every')) {
+    if (input.includes('light')) {
+      return {
+        intent: 'TURN_ON_LIGHTS',
+        action: 'turn_on_lights',
+        parameters: { room: 'all', target: 'all_lights' },
+        confidence: 0.9,
+        reasoning: 'Detected multi-device command targeting all lights'
+      };
+    }
+    if (input.includes('off') && (input.includes('bedroom') || input.includes('living') || input.includes('kitchen'))) {
+      const room = findRoomInText(input);
+      return {
+        intent: 'TURN_OFF_ALL',
+        action: 'turn_off_all',
+        parameters: { room: room || 'bedroom' },
+        confidence: 0.9,
+        reasoning: 'Detected command to turn off all devices in specific room'
+      };
+    }
+  }
+  
+  // Contextual temperature understanding
+  if (input.includes('hot') || input.includes('warm')) {
+    // User feels hot - they want cooling
+    return {
+      intent: 'TURN_ON_AC',
+      action: 'turn_on_ac',
+      parameters: { reason: 'user_feels_hot' },
+      confidence: 0.85,
+      reasoning: 'User expressed feeling hot, suggesting need for cooling'
+    };
+  }
+  
+  if (input.includes('cold') || input.includes('freezing')) {
+    // User feels cold - they want heating or AC off
+    return {
+      intent: 'TURN_OFF_AC',
+      action: 'turn_off_ac',
+      parameters: { reason: 'user_feels_cold' },
+      confidence: 0.85,
+      reasoning: 'User expressed feeling cold, suggesting need to turn off cooling'
+    };
+  }
+  
+  // Implicit lighting requests based on activities
+  if (input.includes('reading') || input.includes('working') || input.includes('studying')) {
+    return {
+      intent: 'SET_LIGHT_BRIGHTNESS',
+      action: 'set_brightness',
+      parameters: { brightness: 80, activity: 'work' },
+      confidence: 0.8,
+      reasoning: 'Activity detected that requires bright lighting'
+    };
+  }
+  
+  if (input.includes('watching') || input.includes('movie') || input.includes('tv')) {
+    return {
+      intent: 'SET_LIGHT_BRIGHTNESS',
+      action: 'set_brightness',
+      parameters: { brightness: 20, activity: 'entertainment' },
+      confidence: 0.8,
+      reasoning: 'Entertainment activity detected, suggesting dim lighting'
+    };
+  }
+  
+  if (input.includes('sleeping') || input.includes('bedtime') || input.includes('night')) {
+    const room = findRoomInText(input) || 'bedroom';
+    return {
+      intent: 'TURN_OFF_LIGHTS',
+      action: 'turn_off_lights',
+      parameters: { room, activity: 'sleep' },
+      confidence: 0.85,
+      reasoning: 'Sleep-related command detected'
+    };
+  }
+  
+  // Comfort-based reasoning
+  if (input.includes('comfortable') || input.includes('cozy')) {
+    return {
+      intent: 'SET_TEMPERATURE',
+      action: 'set_temperature',
+      parameters: { temperature: 22, mode: 'comfort' },
+      confidence: 0.75,
+      reasoning: 'Comfort request detected, setting moderate temperature'
+    };
+  }
+  
+  // Time-based contextual awareness
+  const currentHour = new Date().getHours();
+  if (input.includes('good morning') || (currentHour >= 6 && currentHour < 12 && input.includes('morning'))) {
+    return {
+      intent: 'MORNING_ROUTINE',
+      action: 'morning_routine',
+      parameters: { time_of_day: 'morning' },
+      confidence: 0.8,
+      reasoning: 'Morning greeting or routine detected'
+    };
+  }
+  
+  if (input.includes('good night') || (currentHour >= 21 || currentHour < 6)) {
+    return {
+      intent: 'NIGHT_ROUTINE',
+      action: 'night_routine',
+      parameters: { time_of_day: 'night' },
+      confidence: 0.8,
+      reasoning: 'Night routine detected'
+    };
+  }
+  
+  // Relative brightness adjustments
+  if (input.includes('brighter') || input.includes('more light')) {
+    return {
+      intent: 'ADJUST_BRIGHTNESS',
+      action: 'adjust_brightness',
+      parameters: { adjustment: 'increase', delta: 20 },
+      confidence: 0.85,
+      reasoning: 'Relative brightness increase requested'
+    };
+  }
+  
+  if (input.includes('dimmer') || input.includes('less light') || input.includes('darker')) {
+    return {
+      intent: 'ADJUST_BRIGHTNESS',
+      action: 'adjust_brightness',
+      parameters: { adjustment: 'decrease', delta: 20 },
+      confidence: 0.85,
+      reasoning: 'Relative brightness decrease requested'
+    };
+  }
+  
+  return null;
+}
+
+/**
  * Parse user input and extract intent
+ * Enhanced with AI reasoning and contextual understanding
  * @param {string} input - User voice command
  * @returns {object} Parsed intent with action and parameters
  */
 export function parseIntent(input) {
   const lowerInput = input.toLowerCase().trim();
   
+  // First, try to use AI-enhanced parsing for better accuracy
+  const aiEnhancedIntent = parseIntentWithAIReasoning(lowerInput);
+  if (aiEnhancedIntent && aiEnhancedIntent.confidence > 0.7) {
+    return aiEnhancedIntent;
+  }
+  
+  // Fall back to pattern matching
   // Try to match each intent pattern
   for (const [intentName, intent] of Object.entries(SMART_HOME_INTENTS)) {
     for (const pattern of intent.patterns) {
@@ -971,12 +1119,57 @@ export function parseIntent(input) {
  * @returns {string|null} Room name or null
  */
 function findRoomInText(text) {
+  const normalizedText = normalizeRoomName(text);
+
   for (const room of ROOM_NAMES) {
-    if (text.includes(room)) {
+    if (normalizedText.includes(normalizeRoomName(room))) {
       return room;
     }
   }
-  return null;
+
+  let bestMatch = null;
+  let bestScore = 0;
+
+  for (const room of ROOM_NAMES) {
+    const normalizedRoom = normalizeRoomName(room);
+    const distance = getLevenshteinDistance(normalizedText, normalizedRoom);
+    const maxLen = Math.max(normalizedText.length, normalizedRoom.length);
+    const score = maxLen > 0 ? 1 - distance / maxLen : 0;
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestMatch = room;
+    }
+  }
+
+  return bestScore >= 0.6 ? bestMatch : null;
+}
+
+function normalizeRoomName(name = '') {
+  return name.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function getLevenshteinDistance(a, b) {
+  if (a === b) return 0;
+  if (!a) return b.length;
+  if (!b) return a.length;
+
+  const matrix = Array.from({ length: a.length + 1 }, () => []);
+  for (let i = 0; i <= a.length; i += 1) matrix[i][0] = i;
+  for (let j = 0; j <= b.length; j += 1) matrix[0][j] = j;
+
+  for (let i = 1; i <= a.length; i += 1) {
+    for (let j = 1; j <= b.length; j += 1) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + cost
+      );
+    }
+  }
+
+  return matrix[a.length][b.length];
 }
 
 /**

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useGlobalStore } from '../hooks/useGlobalStore'
 import { parseIntent, generateResponse } from '../utils/intentParser'
+import { chatGPTAssistantService } from '../services/ChatGPTAssistantService'
 import { getAvailableVoices, applyVoiceSettings, DEFAULT_VOICE_SETTINGS, OPENAI_TTS, resolveOpenAIVoiceName } from '../utils/voiceSettings'
 import './ChatGPTAssistant.css'
 
@@ -36,7 +37,7 @@ const ChatGPTAssistant = ({ userId, userProfile, onOpenSettings }) => {
       if (room.lights && Array.isArray(room.lights)) {
         room.lights.forEach(light => {
           if (light.deviceId || light.id) {
-            devices.push({ roomId: room.id, deviceId: light.deviceId || light.id, name: light.name, roomName: room.name });
+            devices.push({ roomId: room.id, deviceId: light.deviceId || light.id, name: light.name, roomName: room.name, state: light.state });
           }
         });
       }
@@ -46,13 +47,73 @@ const ChatGPTAssistant = ({ userId, userProfile, onOpenSettings }) => {
           // Check if this is a light device
           if (device.type === 'light' || (device.name && device.name.toLowerCase().includes('light'))) {
             if (device.id) {
-              devices.push({ roomId: room.id, deviceId: device.id, name: device.name, roomName: room.name });
+              devices.push({ roomId: room.id, deviceId: device.id, name: device.name, roomName: room.name, state: device.state });
             }
           }
         });
       }
     });
     return devices;
+  };
+
+  const normalizeRoomName = (name = '') => name.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+
+  const getLevenshteinDistance = (a, b) => {
+    if (a === b) return 0;
+    if (!a) return b.length;
+    if (!b) return a.length;
+
+    const matrix = Array.from({ length: a.length + 1 }, () => []);
+    for (let i = 0; i <= a.length; i += 1) matrix[i][0] = i;
+    for (let j = 0; j <= b.length; j += 1) matrix[0][j] = j;
+
+    for (let i = 1; i <= a.length; i += 1) {
+      for (let j = 1; j <= b.length; j += 1) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j - 1] + cost
+        );
+      }
+    }
+
+    return matrix[a.length][b.length];
+  };
+
+  const findClosestRoomName = (inputText) => {
+    const smartHomeRooms = state?.smartHome?.rooms || [];
+    const normalizedInput = normalizeRoomName(inputText);
+    if (!normalizedInput || smartHomeRooms.length === 0) return null;
+
+    let bestMatch = null;
+    let bestScore = 0;
+
+    smartHomeRooms.forEach(room => {
+      const normalizedRoom = normalizeRoomName(room.name);
+      if (!normalizedRoom) return;
+
+      if (normalizedInput.includes(normalizedRoom) || normalizedRoom.includes(normalizedInput)) {
+        bestMatch = room.name;
+        bestScore = 1;
+        return;
+      }
+
+      const distance = getLevenshteinDistance(normalizedInput, normalizedRoom);
+      const maxLen = Math.max(normalizedInput.length, normalizedRoom.length);
+      const score = maxLen > 0 ? 1 - distance / maxLen : 0;
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = room.name;
+      }
+    });
+
+    if (bestScore >= 0.6) {
+      return bestMatch;
+    }
+
+    return null;
   };
   
   // Enhanced function to find AC devices
@@ -845,23 +906,57 @@ const ChatGPTAssistant = ({ userId, userProfile, onOpenSettings }) => {
     try {
       switch (action) {
         case 'lights_on': {
-          const lightDevices = findLightDevices(parameters.room)
+          const resolvedRoom = parameters.room ? findClosestRoomName(parameters.room) : null
+          const lightDevices = findLightDevices(resolvedRoom)
           if (lightDevices.length > 0) {
-            for (const { roomId, deviceId } of lightDevices) {
+            const alreadyOn = lightDevices.filter(device => device.state === true)
+            const toTurnOn = lightDevices.filter(device => device.state !== true)
+
+            if (toTurnOn.length === 0) {
+              return resolvedRoom
+                ? `The lights are already on in the ${resolvedRoom}.`
+                : 'The lights are already on.'
+            }
+
+            for (const { roomId, deviceId } of toTurnOn) {
               await globalActions.toggleLight(userId, roomId, deviceId, true)
             }
-            return `I've turned on ${lightDevices.length} lights${parameters.room ? ` in the ${parameters.room}` : ''} for you.`
+
+            if (alreadyOn.length > 0) {
+              return resolvedRoom
+                ? `Some lights were already on in the ${resolvedRoom}. I turned on the rest.`
+                : 'Some lights were already on. I turned on the rest.'
+            }
+
+            return `I've turned on ${toTurnOn.length} lights${resolvedRoom ? ` in the ${resolvedRoom}` : ''} for you.`
           }
           return "I couldn't find any lights to turn on."
         }
         
         case 'lights_off': {
-          const lightDevices = findLightDevices(parameters.room)
+          const resolvedRoom = parameters.room ? findClosestRoomName(parameters.room) : null
+          const lightDevices = findLightDevices(resolvedRoom)
           if (lightDevices.length > 0) {
-            for (const { roomId, deviceId } of lightDevices) {
+            const alreadyOff = lightDevices.filter(device => device.state === false)
+            const toTurnOff = lightDevices.filter(device => device.state !== false)
+
+            if (toTurnOff.length === 0) {
+              return resolvedRoom
+                ? `The lights are already off in the ${resolvedRoom}.`
+                : 'The lights are already off.'
+            }
+
+            for (const { roomId, deviceId } of toTurnOff) {
               await globalActions.toggleLight(userId, roomId, deviceId, false)
             }
-            return `I've turned off ${lightDevices.length} lights${parameters.room ? ` in the ${parameters.room}` : ''} for you.`
+
+            if (alreadyOff.length > 0) {
+              return resolvedRoom
+                ? `Some lights were already off in the ${resolvedRoom}. I turned off the rest.`
+                : 'Some lights were already off. I turned off the rest.'
+            }
+
+            return `I've turned off ${toTurnOff.length} lights${resolvedRoom ? ` in the ${resolvedRoom}` : ''} for you.`
           }
           return "I couldn't find any lights to turn off."
         }
@@ -1133,6 +1228,92 @@ const ChatGPTAssistant = ({ userId, userProfile, onOpenSettings }) => {
     console.log('Available rooms:', smartHomeRooms)
     console.log('Total rooms found:', smartHomeRooms.length)
     
+    // Try to use ChatGPT Assistant Service for advanced AI processing
+    try {
+      // Build context for the AI
+      const context = {
+        rooms: smartHomeRooms,
+        userId: userId,
+        onDeviceControl: async ({ roomId, deviceId, action, property, value }) => {
+          console.log('AI Device Control:', { roomId, deviceId, action, property, value })
+
+          const findDeviceById = () => {
+            for (const room of smartHomeRooms) {
+              if (Array.isArray(room.devices)) {
+                const device = room.devices.find(d => d.id === deviceId)
+                if (device) {
+                  return { device, roomId: room.id }
+                }
+              }
+              if (Array.isArray(room.lights)) {
+                const light = room.lights.find(l => (l.deviceId || l.id) === deviceId)
+                if (light) {
+                  return { device: { ...light, type: 'light' }, roomId: room.id }
+                }
+              }
+            }
+            return { device: null, roomId: null }
+          }
+
+          const { device, roomId: resolvedRoomId } = findDeviceById()
+          const targetRoomId = roomId || resolvedRoomId
+          const deviceType = (property || device?.type || '').toLowerCase()
+
+          if (!targetRoomId) {
+            console.warn('AI Device Control: missing roomId for device', { deviceId, action, property })
+            return
+          }
+          
+          // Map AI actions to actual device control actions
+          switch (action) {
+            case 'turn_on':
+              if (deviceType.includes('light')) {
+                await globalActions.toggleLight(userId, targetRoomId, deviceId, true)
+              } else if (deviceType.includes('fan') || deviceType.includes('air') || deviceType.includes('climate') || deviceType.includes('thermostat')) {
+                await globalActions.setClimateState(userId, targetRoomId, deviceId, true)
+              }
+              break
+            case 'turn_off':
+              if (deviceType.includes('light')) {
+                await globalActions.toggleLight(userId, targetRoomId, deviceId, false)
+              } else if (deviceType.includes('fan') || deviceType.includes('air') || deviceType.includes('climate') || deviceType.includes('thermostat')) {
+                await globalActions.setClimateState(userId, targetRoomId, deviceId, false)
+              }
+              break
+            case 'set_brightness':
+              await globalActions.setLightBrightness(userId, targetRoomId, deviceId, value)
+              break
+            case 'set_temperature':
+              await globalActions.setClimateTemperature(userId, targetRoomId, deviceId, value)
+              break
+            case 'open':
+              if (globalActions.openCurtains) {
+                await globalActions.openCurtains(userId, targetRoomId, deviceId)
+              }
+              break
+            case 'close':
+              if (globalActions.closeCurtains) {
+                await globalActions.closeCurtains(userId, targetRoomId, deviceId)
+              }
+              break
+            default:
+              console.log('Unknown action:', action)
+          }
+        }
+      }
+      
+      // Ask the AI assistant
+      const aiResponse = await chatGPTAssistantService.askAssistant(command, context)
+      
+      if (aiResponse && aiResponse !== command) {
+        console.log('AI Response:', aiResponse)
+        return aiResponse
+      }
+    } catch (error) {
+      console.error('AI Assistant error:', error)
+      // Fall through to legacy processing
+    }
+    
     // Use intent parser for more sophisticated command understanding
     const intent = parseIntent(lowerCommand)
     console.log('Parsed intent:', intent)
@@ -1180,18 +1361,35 @@ const ChatGPTAssistant = ({ userId, userProfile, onOpenSettings }) => {
       if (roomMatch) {
         roomName = roomMatch[0].replace(/\b\w/g, l => l.toUpperCase()) // Capitalize first letter
       }
+
+      if (!roomName) {
+        roomName = findClosestRoomName(lowerCommand)
+      }
       
       const lightDevices = findLightDevices(roomName)
       if (lightDevices.length > 0) {
-        for (const { roomId, deviceId } of lightDevices) {
+        const alreadyOn = lightDevices.filter(device => device.state === true)
+        const toTurnOn = lightDevices.filter(device => device.state !== true)
+
+        if (toTurnOn.length === 0) {
+          return roomName
+            ? `The lights are already on in the ${roomName}`
+            : 'The lights are already on'
+        }
+
+        for (const { roomId, deviceId } of toTurnOn) {
           await globalActions.toggleLight(userId, roomId, deviceId, true)
         }
-        
-        if (roomName) {
-          return `Turned on lights in the ${roomName}`
-        } else {
-          return `Turned on ${lightDevices.length} lights`
+
+        if (alreadyOn.length > 0) {
+          return roomName
+            ? `Some lights were already on in the ${roomName}. I turned on the rest.`
+            : 'Some lights were already on. I turned on the rest.'
         }
+
+        return roomName
+          ? `Turned on lights in the ${roomName}`
+          : `Turned on ${toTurnOn.length} lights`
       } else {
         return 'No light devices found in your smart home setup'
       }
@@ -1206,18 +1404,35 @@ const ChatGPTAssistant = ({ userId, userProfile, onOpenSettings }) => {
       if (roomMatch) {
         roomName = roomMatch[0].replace(/\b\w/g, l => l.toUpperCase()) // Capitalize first letter
       }
+
+      if (!roomName) {
+        roomName = findClosestRoomName(lowerCommand)
+      }
       
       const lightDevices = findLightDevices(roomName)
       if (lightDevices.length > 0) {
-        for (const { roomId, deviceId } of lightDevices) {
+        const alreadyOff = lightDevices.filter(device => device.state === false)
+        const toTurnOff = lightDevices.filter(device => device.state !== false)
+
+        if (toTurnOff.length === 0) {
+          return roomName
+            ? `The lights are already off in the ${roomName}`
+            : 'The lights are already off'
+        }
+
+        for (const { roomId, deviceId } of toTurnOff) {
           await globalActions.toggleLight(userId, roomId, deviceId, false)
         }
-        
-        if (roomName) {
-          return `Turned off lights in the ${roomName}`
-        } else {
-          return `Turned off ${lightDevices.length} lights`
+
+        if (alreadyOff.length > 0) {
+          return roomName
+            ? `Some lights were already off in the ${roomName}. I turned off the rest.`
+            : 'Some lights were already off. I turned off the rest.'
         }
+
+        return roomName
+          ? `Turned off lights in the ${roomName}`
+          : `Turned off ${toTurnOff.length} lights`
       } else {
         return 'No light devices found in your smart home setup'
       }
